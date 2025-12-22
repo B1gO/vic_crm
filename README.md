@@ -100,6 +100,20 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 - **Sourcing Performance**: Track recruiter sourcing stats (sourced, ready, placed)
 - **Stage Statistics**: See counts for training, market ready, and placed candidates
 
+### Vendor Management
+- **Vendor List**: Track vendors with company name, contact, email, phone
+- **Vendor Detail**: View vendor performance and submission history
+- **Submission Tracking**: Track candidates submitted through each vendor
+
+### Client Management
+- **Client List**: Track end clients with company name and industry
+- **Submission Flow**: Track candidate submissions to client positions
+
+### Interview Experience (面经)
+- **Tech Categories**: Filter by Java, React, Python, AWS, etc.
+- **Recording Links**: Store interview recording URLs
+- **Tech Tags**: Tag specific technologies covered in interviews
+
 ### Timeline Event Types
 | Type | Description |
 |------|-------------|
@@ -109,6 +123,11 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 | BATCH | Batch started/ended |
 | READINESS | Resume ready |
 | MOCK | Tech mock, general mock |
-| INTERVIEW | Vendor OA, client interview |
+| VENDOR_SUBMIT | Submitted to vendor |
+| VENDOR_OA | Vendor online assessment |
+| VENDOR_INTERVIEW | Vendor interview |
+| CLIENT_SUBMIT | Submitted to client |
+| CLIENT_INTERVIEW | Client interview round |
 | OUTCOME | Offer, placed |
 | CLOSED | Closed with reason |
+

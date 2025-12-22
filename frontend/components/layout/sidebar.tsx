@@ -2,13 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Layers, UserCircle } from 'lucide-react';
+import { LayoutDashboard, Users, Layers, UserCircle, Building2, Building, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/candidates', label: 'Candidates', icon: Users },
     { href: '/batches', label: 'Batches', icon: Layers },
+    { href: '/vendors', label: 'Vendors', icon: Building2 },
+    { href: '/clients', label: 'Clients', icon: Building },
+    { href: '/interviews', label: 'Interviews', icon: BookOpen },
     { href: '/users', label: 'Users', icon: UserCircle },
 ];
 
