@@ -39,7 +39,12 @@ export default function CandidatesPage() {
         city: '',
         workAuth: '' as WorkAuth | '',
         recruiterId: '',
-        batchId: ''
+        batchId: '',
+        wechatId: '',
+        discordName: '',
+        linkedinUrl: '',
+        marketingLinkedinUrl: '',
+        education: ''
     });
 
     useEffect(() => {
@@ -84,7 +89,12 @@ export default function CandidatesPage() {
                 lifecycleStage: 'RECRUITMENT',
                 workAuth: formData.workAuth || undefined,
                 recruiter: formData.recruiterId ? { id: Number(formData.recruiterId) } as User : undefined,
-                batch: formData.batchId ? { id: Number(formData.batchId) } as Batch : undefined
+                batch: formData.batchId ? { id: Number(formData.batchId) } as Batch : undefined,
+                wechatId: formData.wechatId || undefined,
+                discordName: formData.discordName || undefined,
+                linkedinUrl: formData.linkedinUrl || undefined,
+                marketingLinkedinUrl: formData.marketingLinkedinUrl || undefined,
+                education: formData.education || undefined
             });
             setFormData({
                 name: '',
@@ -93,7 +103,12 @@ export default function CandidatesPage() {
                 city: '',
                 workAuth: '',
                 recruiterId: users.length > 0 ? String(users[0].id) : '',
-                batchId: ''
+                batchId: '',
+                wechatId: '',
+                discordName: '',
+                linkedinUrl: '',
+                marketingLinkedinUrl: '',
+                education: ''
             });
             setShowForm(false);
             loadCandidates();
@@ -137,6 +152,7 @@ export default function CandidatesPage() {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleCreate} className="space-y-4">
+                            {/* Row 1: Basic Info */}
                             <div className="grid grid-cols-4 gap-4">
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Name *</label>
@@ -185,7 +201,61 @@ export default function CandidatesPage() {
                                     </select>
                                 </div>
                             </div>
+                            {/* Row 2: Social & Contact */}
                             <div className="grid grid-cols-4 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">WeChat ID</label>
+                                    <input
+                                        type="text"
+                                        value={formData.wechatId}
+                                        onChange={e => setFormData({ ...formData, wechatId: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="wechat_id"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Discord</label>
+                                    <input
+                                        type="text"
+                                        value={formData.discordName}
+                                        onChange={e => setFormData({ ...formData, discordName: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="user#1234"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">LinkedIn</label>
+                                    <input
+                                        type="url"
+                                        value={formData.linkedinUrl}
+                                        onChange={e => setFormData({ ...formData, linkedinUrl: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="linkedin.com/in/..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Marketing LinkedIn</label>
+                                    <input
+                                        type="url"
+                                        value={formData.marketingLinkedinUrl}
+                                        onChange={e => setFormData({ ...formData, marketingLinkedinUrl: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="linkedin.com/in/..."
+                                    />
+                                </div>
+                            </div>
+                            {/* Row 3: Education & Assignment */}
+                            <div className="grid grid-cols-4 gap-4">
+                                <div className="col-span-2">
+                                    <label className="text-sm font-medium mb-1 block">Education</label>
+                                    <input
+                                        type="text"
+                                        value={formData.education}
+                                        onChange={e => setFormData({ ...formData, education: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="MS Computer Science - Georgia Tech"
+                                    />
+                                </div>
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Recruiter</label>
                                     <select
@@ -212,10 +282,11 @@ export default function CandidatesPage() {
                                         ))}
                                     </select>
                                 </div>
-                                <div className="col-span-2 flex items-end gap-2">
-                                    <Button type="submit">Create</Button>
-                                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-                                </div>
+                            </div>
+                            {/* Row 4: Actions */}
+                            <div className="flex gap-2 pt-2">
+                                <Button type="submit">Create</Button>
+                                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
                             </div>
                         </form>
                     </CardContent>

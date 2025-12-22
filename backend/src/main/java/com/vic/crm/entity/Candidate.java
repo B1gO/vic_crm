@@ -31,6 +31,8 @@ public class Candidate {
     private String wechatId;
     private String wechatName;
     private String discordName;
+    private String linkedinUrl;
+    private String marketingLinkedinUrl;
     private String techTags;
 
     // Work authorization

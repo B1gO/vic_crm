@@ -53,6 +53,8 @@ export interface Candidate {
     wechatId: string | null;
     wechatName: string | null;
     discordName: string | null;
+    linkedinUrl: string | null;
+    marketingLinkedinUrl: string | null;
     techTags: string | null;
     workAuth: WorkAuth | null;
     city: string | null;
