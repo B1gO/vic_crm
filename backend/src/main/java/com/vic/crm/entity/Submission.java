@@ -36,6 +36,10 @@ public class Submission {
     @JoinColumn(name = "client_id")
     private Client client;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "submitted_by")
+    private User submittedBy;
+
     @Column(nullable = false)
     private String positionTitle;
 

@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { vendorsApi, submissionsApi, Vendor, Submission } from '@/lib/api';
+import { vendorsApi, submissionsApi, Vendor, Submission, User } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building2, Mail, Phone, Users, TrendingUp, CheckCircle, XCircle, Clock, Building } from 'lucide-react';
+import { ArrowLeft, Building2, Mail, Phone, Users, TrendingUp, CheckCircle, XCircle, Clock, Building, UserCircle } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
     VENDOR_SCREENING: 'bg-yellow-500/10 text-yellow-600',
@@ -24,6 +24,16 @@ const statusLabels: Record<string, string> = {
     REJECTED: 'Rejected',
 };
 
+interface RecruiterStats {
+    recruiter: User;
+    total: number;
+    placed: number;
+    offered: number;
+    rejected: number;
+    inProgress: number;
+    successRate: number;
+}
+
 export default function VendorDetailPage() {
     const params = useParams();
     const vendorId = Number(params.id);
@@ -31,6 +41,7 @@ export default function VendorDetailPage() {
     const [vendor, setVendor] = useState<Vendor | null>(null);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedRecruiter, setSelectedRecruiter] = useState<number | null>(null);
 
     useEffect(() => {
         if (vendorId) {
@@ -71,13 +82,47 @@ export default function VendorDetailPage() {
         );
     }
 
-    // Calculate metrics
-    const totalSubmissions = submissions.length;
-    const placedCount = submissions.filter(s => s.status === 'PLACED').length;
-    const offeredCount = submissions.filter(s => s.status === 'OFFERED').length;
-    const rejectedCount = submissions.filter(s => s.status === 'REJECTED').length;
-    const inProgressCount = submissions.filter(s => ['VENDOR_SCREENING', 'CLIENT_ROUND'].includes(s.status)).length;
+    // Calculate overall metrics
+    const filteredSubmissions = selectedRecruiter
+        ? submissions.filter(s => s.submittedBy?.id === selectedRecruiter)
+        : submissions;
+
+    const totalSubmissions = filteredSubmissions.length;
+    const placedCount = filteredSubmissions.filter(s => s.status === 'PLACED').length;
+    const offeredCount = filteredSubmissions.filter(s => s.status === 'OFFERED').length;
+    const rejectedCount = filteredSubmissions.filter(s => s.status === 'REJECTED').length;
+    const inProgressCount = filteredSubmissions.filter(s => ['VENDOR_SCREENING', 'CLIENT_ROUND'].includes(s.status)).length;
     const successRate = totalSubmissions > 0 ? Math.round(((placedCount + offeredCount) / totalSubmissions) * 100) : 0;
+
+    // Calculate per-recruiter stats
+    const recruiterStatsMap = new Map<number, RecruiterStats>();
+    submissions.forEach(sub => {
+        if (sub.submittedBy) {
+            const id = sub.submittedBy.id;
+            if (!recruiterStatsMap.has(id)) {
+                recruiterStatsMap.set(id, {
+                    recruiter: sub.submittedBy,
+                    total: 0,
+                    placed: 0,
+                    offered: 0,
+                    rejected: 0,
+                    inProgress: 0,
+                    successRate: 0
+                });
+            }
+            const stats = recruiterStatsMap.get(id)!;
+            stats.total++;
+            if (sub.status === 'PLACED') stats.placed++;
+            if (sub.status === 'OFFERED') stats.offered++;
+            if (sub.status === 'REJECTED') stats.rejected++;
+            if (['VENDOR_SCREENING', 'CLIENT_ROUND'].includes(sub.status)) stats.inProgress++;
+        }
+    });
+    // Calculate success rates
+    recruiterStatsMap.forEach(stats => {
+        stats.successRate = stats.total > 0 ? Math.round(((stats.placed + stats.offered) / stats.total) * 100) : 0;
+    });
+    const recruiterStats = Array.from(recruiterStatsMap.values()).sort((a, b) => b.total - a.total);
 
     return (
         <div className="space-y-6">
@@ -119,6 +164,21 @@ export default function VendorDetailPage() {
                             <div className="flex items-center gap-3">
                                 <Phone className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm">{vendor.phone}</span>
+                            </div>
+                        )}
+                        {vendor.recruiters && vendor.recruiters.length > 0 && (
+                            <div className="pt-3 border-t border-border">
+                                <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
+                                    <UserCircle className="w-3 h-3" />
+                                    Recruiters
+                                </p>
+                                <div className="flex flex-wrap gap-1">
+                                    {vendor.recruiters.map(recruiter => (
+                                        <span key={recruiter.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-600">
+                                            {recruiter.name}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
                         )}
                         {vendor.clients && vendor.clients.length > 0 && (
@@ -189,6 +249,83 @@ export default function VendorDetailPage() {
                 </Card>
             </div>
 
+            {/* Recruiter Performance Breakdown */}
+            {recruiterStats.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <UserCircle className="w-5 h-5" />
+                            Performance by Recruiter
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-border">
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Recruiter</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Total</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">In Progress</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Offered</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Placed</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Rejected</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Success Rate</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Filter</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {recruiterStats.map(stats => (
+                                        <tr key={stats.recruiter.id} className={`border-b border-border hover:bg-muted/50 ${selectedRecruiter === stats.recruiter.id ? 'bg-primary/5' : ''}`}>
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <UserCircle className="w-4 h-4 text-purple-500" />
+                                                    <span className="font-medium">{stats.recruiter.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4 text-center font-semibold">{stats.total}</td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-500/10 text-yellow-600">
+                                                    {stats.inProgress}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-600">
+                                                    {stats.offered}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-500/10 text-emerald-600">
+                                                    {stats.placed}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-600">
+                                                    {stats.rejected}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className={`font-semibold ${stats.successRate >= 50 ? 'text-emerald-600' : stats.successRate >= 25 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                                    {stats.successRate}%
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <Button
+                                                    variant={selectedRecruiter === stats.recruiter.id ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => setSelectedRecruiter(selectedRecruiter === stats.recruiter.id ? null : stats.recruiter.id)}
+                                                >
+                                                    {selectedRecruiter === stats.recruiter.id ? 'Clear' : 'View'}
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Status Breakdown */}
             <div className="grid gap-4 md:grid-cols-4">
                 <Card className="bg-yellow-500/5 border-yellow-500/20">
@@ -232,10 +369,17 @@ export default function VendorDetailPage() {
             {/* Submissions List */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Submission History</CardTitle>
+                    <CardTitle className="flex items-center justify-between">
+                        <span>Submission History</span>
+                        {selectedRecruiter && (
+                            <span className="text-sm font-normal text-muted-foreground">
+                                Filtered by: {recruiterStats.find(r => r.recruiter.id === selectedRecruiter)?.recruiter.name}
+                            </span>
+                        )}
+                    </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {submissions.length === 0 ? (
+                    {filteredSubmissions.length === 0 ? (
                         <p className="text-center text-muted-foreground py-6">No submissions yet</p>
                     ) : (
                         <div className="overflow-x-auto">
@@ -245,13 +389,14 @@ export default function VendorDetailPage() {
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Candidate</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Position</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Client</th>
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Recruiter</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Round</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Submitted</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {submissions.map(sub => (
+                                    {filteredSubmissions.map(sub => (
                                         <tr key={sub.id} className="border-b border-border hover:bg-muted/50">
                                             <td className="py-3 px-4">
                                                 <Link href={`/candidates/${sub.candidate.id}`} className="font-medium hover:text-primary">
@@ -260,6 +405,14 @@ export default function VendorDetailPage() {
                                             </td>
                                             <td className="py-3 px-4 text-sm">{sub.positionTitle}</td>
                                             <td className="py-3 px-4 text-sm">{sub.client?.companyName || '-'}</td>
+                                            <td className="py-3 px-4 text-sm">
+                                                {sub.submittedBy ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-600">
+                                                        <UserCircle className="w-3 h-3" />
+                                                        {sub.submittedBy.name}
+                                                    </span>
+                                                ) : '-'}
+                                            </td>
                                             <td className="py-3 px-4">
                                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColors[sub.status] || 'bg-muted'}`}>
                                                     {statusLabels[sub.status] || sub.status}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, submissionsApi, vendorsApi, clientsApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth, Submission, Vendor, Client } from '@/lib/api';
+import { candidatesApi, submissionsApi, vendorsApi, clientsApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth, Submission, Vendor, Client, User } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
@@ -59,6 +59,7 @@ export default function CandidateDetailPage() {
     const [submitFormData, setSubmitFormData] = useState({
         vendorId: '',
         clientId: '',
+        recruiterId: '',
         positionTitle: '',
         screeningType: 'INTERVIEW' as 'OA' | 'INTERVIEW' | 'DIRECT',
         notes: ''
@@ -93,6 +94,7 @@ export default function CandidateDetailPage() {
                 candidate: { id: candidate.id } as Candidate,
                 vendor: { id: Number(submitFormData.vendorId) } as Vendor,
                 client: submitFormData.clientId ? { id: Number(submitFormData.clientId) } as Client : undefined,
+                submittedBy: submitFormData.recruiterId ? { id: Number(submitFormData.recruiterId) } as User : undefined,
                 positionTitle: submitFormData.positionTitle,
                 screeningType: submitFormData.screeningType,
                 notes: submitFormData.notes,
@@ -100,7 +102,7 @@ export default function CandidateDetailPage() {
             const newSubmissions = await submissionsApi.getByCandidate(id);
             setSubmissions(newSubmissions);
             setShowSubmitForm(false);
-            setSubmitFormData({ vendorId: '', clientId: '', positionTitle: '', screeningType: 'INTERVIEW', notes: '' });
+            setSubmitFormData({ vendorId: '', clientId: '', recruiterId: '', positionTitle: '', screeningType: 'INTERVIEW', notes: '' });
         } catch (error) {
             console.error('Failed to create submission:', error);
         }
@@ -365,6 +367,19 @@ export default function CandidateDetailPage() {
                                                 <option value="">Select client...</option>
                                                 {clients.map(c => (
                                                     <option key={c.id} value={c.id}>{c.companyName}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Recruiter</label>
+                                            <select
+                                                value={submitFormData.recruiterId}
+                                                onChange={e => setSubmitFormData({ ...submitFormData, recruiterId: e.target.value })}
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                            >
+                                                <option value="">Select recruiter...</option>
+                                                {submitFormData.vendorId && vendors.find(v => v.id === Number(submitFormData.vendorId))?.recruiters?.map(r => (
+                                                    <option key={r.id} value={r.id}>{r.name}</option>
                                                 ))}
                                             </select>
                                         </div>

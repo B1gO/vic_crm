@@ -39,6 +39,11 @@ public class Vendor {
     @Builder.Default
     private Set<Client> clients = new HashSet<>();
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "vendor_recruiters", joinColumns = @JoinColumn(name = "vendor_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    @Builder.Default
+    private Set<User> recruiters = new HashSet<>();
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

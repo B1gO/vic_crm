@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { vendorsApi, clientsApi, Vendor, Client } from '@/lib/api';
+import { vendorsApi, clientsApi, usersApi, Vendor, Client, User } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Building2, Trash2, Edit, Mail, Phone, Building } from 'lucide-react';
+import { Plus, Building2, Trash2, Edit, Mail, Phone, Building, UserCircle } from 'lucide-react';
 
 export default function VendorsPage() {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -19,7 +20,8 @@ export default function VendorsPage() {
         email: '',
         phone: '',
         notes: '',
-        clientIds: [] as number[]
+        clientIds: [] as number[],
+        recruiterIds: [] as number[]
     });
 
     useEffect(() => {
@@ -28,12 +30,14 @@ export default function VendorsPage() {
 
     const loadData = async () => {
         try {
-            const [vendorsData, clientsData] = await Promise.all([
+            const [vendorsData, clientsData, usersData] = await Promise.all([
                 vendorsApi.getAll(),
-                clientsApi.getAll()
+                clientsApi.getAll(),
+                usersApi.getAll()
             ]);
             setVendors(vendorsData);
             setClients(clientsData);
+            setUsers(usersData);
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -50,7 +54,8 @@ export default function VendorsPage() {
                 email: formData.email,
                 phone: formData.phone,
                 notes: formData.notes,
-                clients: formData.clientIds.map(id => ({ id }))
+                clients: formData.clientIds.map(id => ({ id })),
+                recruiters: formData.recruiterIds.map(id => ({ id }))
             };
             if (editingId) {
                 await vendorsApi.update(editingId, payload as unknown as Partial<Vendor>);
@@ -65,7 +70,7 @@ export default function VendorsPage() {
     };
 
     const resetForm = () => {
-        setFormData({ companyName: '', contactName: '', email: '', phone: '', notes: '', clientIds: [] });
+        setFormData({ companyName: '', contactName: '', email: '', phone: '', notes: '', clientIds: [], recruiterIds: [] });
         setShowForm(false);
         setEditingId(null);
     };
@@ -77,7 +82,8 @@ export default function VendorsPage() {
             email: vendor.email || '',
             phone: vendor.phone || '',
             notes: vendor.notes || '',
-            clientIds: vendor.clients?.map(c => c.id) || []
+            clientIds: vendor.clients?.map(c => c.id) || [],
+            recruiterIds: vendor.recruiters?.map(r => r.id) || []
         });
         setEditingId(vendor.id);
         setShowForm(true);
@@ -99,6 +105,15 @@ export default function VendorsPage() {
             clientIds: prev.clientIds.includes(clientId)
                 ? prev.clientIds.filter(id => id !== clientId)
                 : [...prev.clientIds, clientId]
+        }));
+    };
+
+    const toggleRecruiter = (userId: number) => {
+        setFormData(prev => ({
+            ...prev,
+            recruiterIds: prev.recruiterIds.includes(userId)
+                ? prev.recruiterIds.filter(id => id !== userId)
+                : [...prev.recruiterIds, userId]
         }));
     };
 
@@ -170,6 +185,29 @@ export default function VendorsPage() {
                                         className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                                         placeholder="(555) 123-4567"
                                     />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium mb-1 block">Recruiters</label>
+                                <div className="flex flex-wrap gap-2 p-3 border border-border rounded-lg bg-background min-h-[60px]">
+                                    {users.length === 0 ? (
+                                        <span className="text-sm text-muted-foreground">No users available</span>
+                                    ) : (
+                                        users.map(user => (
+                                            <button
+                                                key={user.id}
+                                                type="button"
+                                                onClick={() => toggleRecruiter(user.id)}
+                                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm transition-colors ${formData.recruiterIds.includes(user.id)
+                                                        ? 'bg-purple-500 text-white'
+                                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                                    }`}
+                                            >
+                                                <UserCircle className="w-3 h-3 mr-1" />
+                                                {user.name}
+                                            </button>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                             <div>
@@ -262,6 +300,18 @@ export default function VendorsPage() {
                                         </p>
                                     )}
                                 </div>
+                                {vendor.recruiters && vendor.recruiters.length > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-border">
+                                        <p className="text-xs text-muted-foreground mb-2">Recruiters:</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {vendor.recruiters.map(recruiter => (
+                                                <span key={recruiter.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-600">
+                                                    {recruiter.name}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 {vendor.clients && vendor.clients.length > 0 && (
                                     <div className="mt-3 pt-3 border-t border-border">
                                         <p className="text-xs text-muted-foreground mb-2">Clients:</p>

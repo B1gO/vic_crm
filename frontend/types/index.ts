@@ -60,6 +60,7 @@ export interface Vendor {
     phone: string | null;
     notes: string | null;
     clients: Client[];
+    recruiters: User[];
     createdAt: string;
     updatedAt: string;
 }
@@ -106,6 +107,7 @@ export interface Submission {
     candidate: Candidate;
     vendor: Vendor;
     client: Client | null;
+    submittedBy: User | null;
     positionTitle: string;
     status: SubmissionStatus;
     screeningType: ScreeningType | null;
