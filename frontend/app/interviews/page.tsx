@@ -122,7 +122,15 @@ export default function InterviewsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Interview Experiences</h1>
                     <p className="text-muted-foreground mt-1">面经管理 - Manage interview questions and recordings</p>
                 </div>
-                <Button onClick={() => { setShowForm(!showForm); setEditingId(null); resetForm(); }}>
+                <Button onClick={() => {
+                    if (showForm && !editingId) {
+                        setShowForm(false);
+                    } else {
+                        setFormData({ techCategory: 'Java', clientId: '', vendorId: '', candidateId: '', techTags: '', recordingUrl: '', notes: '' });
+                        setEditingId(null);
+                        setShowForm(true);
+                    }
+                }}>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Interview
                 </Button>
