@@ -85,3 +85,25 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 | MARKET_READY | PLACED, ELIMINATED |
 | PLACED | (none) |
 | ELIMINATED | (none) |
+
+---
+
+## Features
+
+### Candidate Management
+- **Add Candidate Form**: Create candidates with recruiter and batch assignment
+- **Career Timeline**: Track all events from recruitment to placement
+- **Stage Transitions**: Move candidates through RECRUITMENT → TRAINING → MARKET_READY → PLACED
+
+### Timeline Event Types
+| Type | Description |
+|------|-------------|
+| STAGE_CHANGE | Automatic stage transitions |
+| COMMUNICATION | Talked, scheduled screening |
+| CONTRACT | Contract sent/signed |
+| BATCH | Batch started/ended |
+| READINESS | Resume ready |
+| MOCK | Tech mock, general mock |
+| INTERVIEW | Vendor OA, client interview |
+| OUTCOME | Offer, placed |
+| CLOSED | Closed with reason |

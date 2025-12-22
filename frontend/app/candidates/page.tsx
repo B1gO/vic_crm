@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { candidatesApi, Candidate, LifecycleStage, WorkAuth } from '@/lib/api';
+import { candidatesApi, usersApi, batchesApi, Candidate, User, Batch, LifecycleStage, WorkAuth } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
@@ -27,6 +27,8 @@ const workAuthLabels: Record<WorkAuth, string> = {
 
 export default function CandidatesPage() {
     const [candidates, setCandidates] = useState<Candidate[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [batches, setBatches] = useState<Batch[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [showForm, setShowForm] = useState(false);
@@ -35,29 +37,64 @@ export default function CandidatesPage() {
         email: '',
         phone: '',
         city: '',
-        workAuth: '' as WorkAuth | ''
+        workAuth: '' as WorkAuth | '',
+        recruiterId: '',
+        batchId: ''
     });
 
     useEffect(() => {
-        loadCandidates();
+        loadData();
     }, []);
+
+    const loadData = async () => {
+        try {
+            const [candidatesData, usersData, batchesData] = await Promise.all([
+                candidatesApi.getAll(),
+                usersApi.getAll(),
+                batchesApi.getAll()
+            ]);
+            setCandidates(candidatesData);
+            setUsers(usersData);
+            setBatches(batchesData);
+            // Default recruiter to first user (simulating current user)
+            if (usersData.length > 0 && !formData.recruiterId) {
+                setFormData(prev => ({ ...prev, recruiterId: String(usersData[0].id) }));
+            }
+        } catch (error) {
+            console.error('Failed to load data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const loadCandidates = () => {
         candidatesApi.getAll()
             .then(setCandidates)
-            .catch(console.error)
-            .finally(() => setLoading(false));
+            .catch(console.error);
     };
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             await candidatesApi.create({
-                ...formData,
+                name: formData.name,
+                email: formData.email || undefined,
+                phone: formData.phone || undefined,
+                city: formData.city || undefined,
                 lifecycleStage: 'RECRUITMENT',
-                workAuth: formData.workAuth || undefined
+                workAuth: formData.workAuth || undefined,
+                recruiter: formData.recruiterId ? { id: Number(formData.recruiterId) } as User : undefined,
+                batch: formData.batchId ? { id: Number(formData.batchId) } as Batch : undefined
             });
-            setFormData({ name: '', email: '', phone: '', city: '', workAuth: '' });
+            setFormData({
+                name: '',
+                email: '',
+                phone: '',
+                city: '',
+                workAuth: '',
+                recruiterId: users.length > 0 ? String(users[0].id) : '',
+                batchId: ''
+            });
             setShowForm(false);
             loadCandidates();
         } catch (error) {
@@ -74,6 +111,12 @@ export default function CandidatesPage() {
             c.city?.toLowerCase().includes(searchLower)
         );
     }, [candidates, search]);
+
+    // Filter users to only show recruiters (RECRUITER role)
+    const recruiters = useMemo(() =>
+        users.filter(u => u.role === 'RECRUITER' || u.role === 'ADMIN' || u.role === 'MANAGER'),
+        [users]
+    );
 
     return (
         <div className="space-y-6">
@@ -93,56 +136,86 @@ export default function CandidatesPage() {
                         <CardTitle>New Candidate</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={handleCreate} className="grid grid-cols-5 gap-4">
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">Name *</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                                    placeholder="John Doe"
-                                />
+                        <form onSubmit={handleCreate} className="space-y-4">
+                            <div className="grid grid-cols-4 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Name *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.name}
+                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="John Doe"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Email</label>
+                                    <input
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="john@example.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">City</label>
+                                    <input
+                                        type="text"
+                                        value={formData.city}
+                                        onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="Atlanta, GA"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Visa</label>
+                                    <select
+                                        value={formData.workAuth}
+                                        onChange={e => setFormData({ ...formData, workAuth: e.target.value as WorkAuth })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                    >
+                                        <option value="">Select...</option>
+                                        <option value="CITIZEN">Citizen</option>
+                                        <option value="GC">GC</option>
+                                        <option value="OPT">OPT</option>
+                                        <option value="H1B">H1B</option>
+                                        <option value="CPT">CPT</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">Email</label>
-                                <input
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                                    placeholder="john@example.com"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">City</label>
-                                <input
-                                    type="text"
-                                    value={formData.city}
-                                    onChange={e => setFormData({ ...formData, city: e.target.value })}
-                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                                    placeholder="Atlanta, GA"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">Visa</label>
-                                <select
-                                    value={formData.workAuth}
-                                    onChange={e => setFormData({ ...formData, workAuth: e.target.value as WorkAuth })}
-                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                                >
-                                    <option value="">Select...</option>
-                                    <option value="CITIZEN">Citizen</option>
-                                    <option value="GC">GC</option>
-                                    <option value="OPT">OPT</option>
-                                    <option value="H1B">H1B</option>
-                                    <option value="CPT">CPT</option>
-                                </select>
-                            </div>
-                            <div className="flex items-end gap-2">
-                                <Button type="submit">Create</Button>
-                                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                            <div className="grid grid-cols-4 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Recruiter</label>
+                                    <select
+                                        value={formData.recruiterId}
+                                        onChange={e => setFormData({ ...formData, recruiterId: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                    >
+                                        <option value="">Select...</option>
+                                        {recruiters.map(user => (
+                                            <option key={user.id} value={user.id}>{user.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Batch</label>
+                                    <select
+                                        value={formData.batchId}
+                                        onChange={e => setFormData({ ...formData, batchId: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                    >
+                                        <option value="">Select...</option>
+                                        {batches.map(batch => (
+                                            <option key={batch.id} value={batch.id}>{batch.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="col-span-2 flex items-end gap-2">
+                                    <Button type="submit">Create</Button>
+                                    <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                                </div>
                             </div>
                         </form>
                     </CardContent>
