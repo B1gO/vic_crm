@@ -17,14 +17,12 @@ public class CorsConfig {
         config.setAllowCredentials(true);
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
-                "http://127.0.0.1:3000",
                 "http://192.168.31.127:3000"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", config);
-
+        source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
 }

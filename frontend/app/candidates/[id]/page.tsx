@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, Candidate, StageTransition, LifecycleStage, WorkAuth } from '@/lib/api';
+import { candidatesApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
-import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -32,7 +32,7 @@ export default function CandidateDetailPage() {
     const id = Number(params.id);
 
     const [candidate, setCandidate] = useState<Candidate | null>(null);
-    const [transitions, setTransitions] = useState<StageTransition[]>([]);
+    const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'workspace' | 'profile'>('workspace');
     const [transitioning, setTransitioning] = useState(false);
@@ -41,11 +41,11 @@ export default function CandidateDetailPage() {
         if (id) {
             Promise.all([
                 candidatesApi.getById(id),
-                candidatesApi.getTransitions(id),
+                candidatesApi.getTimeline(id),
             ])
                 .then(([c, t]) => {
                     setCandidate(c);
-                    setTransitions(t);
+                    setTimeline(t);
                 })
                 .catch(console.error)
                 .finally(() => setLoading(false));
@@ -58,8 +58,8 @@ export default function CandidateDetailPage() {
         try {
             const updated = await candidatesApi.transition(candidate.id, toStage, `Moved to ${toStage}`);
             setCandidate(updated);
-            const newTransitions = await candidatesApi.getTransitions(id);
-            setTransitions(newTransitions);
+            const newTimeline = await candidatesApi.getTimeline(id);
+            setTimeline(newTimeline);
         } catch (error) {
             console.error('Transition failed:', error);
         } finally {
@@ -105,9 +105,9 @@ export default function CandidateDetailPage() {
                                 <StageBadge stage={candidate.lifecycleStage} />
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                {candidate.batches && candidate.batches.length > 0 && (
+                                {candidate.batch && (
                                     <span className="flex items-center gap-1">
-                                        📚 {candidate.batches.map(b => b.name).join(', ')}
+                                        📚 {candidate.batch.name}
                                     </span>
                                 )}
                                 {candidate.recruiter && (
@@ -118,15 +118,6 @@ export default function CandidateDetailPage() {
                             </div>
                         </div>
 
-                        {/* Current Milestone */}
-                        <div className="text-right">
-                            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Current Milestone</p>
-                            <p className="text-xl font-semibold text-primary">
-                                {candidate.lifecycleStage === 'PLACED' ? 'Placed' :
-                                    candidate.lifecycleStage === 'ELIMINATED' ? 'Terminated' :
-                                        'In Pipeline'}
-                            </p>
-                        </div>
 
                         {/* Contact Icons */}
                         <div className="flex gap-2">
@@ -173,7 +164,7 @@ export default function CandidateDetailPage() {
 
             {/* Tab Content */}
             {activeTab === 'workspace' ? (
-                <div className="grid gap-6 md:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2">
                     {/* Market Entry Gate */}
                     <Card>
                         <CardHeader className="pb-3">
@@ -218,13 +209,6 @@ export default function CandidateDetailPage() {
                         </CardContent>
                     </Card>
 
-                    {/* Compliance Card */}
-                    <Card className="bg-gradient-to-br from-rose-500 to-pink-600 text-white">
-                        <CardContent className="p-6">
-                            <p className="text-xs uppercase tracking-wide opacity-80 mb-2">Compliance</p>
-                            <p className="text-5xl font-bold">{candidate.completionRate || 0}%</p>
-                        </CardContent>
-                    </Card>
 
                     {/* Career Timeline */}
                     <Card className="md:col-span-1">
@@ -234,25 +218,37 @@ export default function CandidateDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {transitions.length === 0 ? (
-                                <p className="text-muted-foreground text-sm">No transitions yet</p>
+                            {timeline.length === 0 ? (
+                                <p className="text-muted-foreground text-sm">No events yet</p>
                             ) : (
                                 <div className="space-y-4">
-                                    {transitions.slice(0, 5).map((t, i) => (
+                                    {timeline.slice(0, 8).map((t, i) => (
                                         <div key={t.id} className="flex gap-3 relative">
-                                            {i < transitions.length - 1 && (
-                                                <div className="absolute left-[9px] top-6 w-0.5 h-8 bg-border" />
+                                            {i < timeline.length - 1 && (
+                                                <div className="absolute left-[11px] top-8 w-0.5 h-full bg-border" />
                                             )}
-                                            <div className={cn("w-5 h-5 rounded-full shrink-0 mt-0.5",
-                                                t.toStage === 'PLACED' ? 'bg-emerald-500' :
-                                                    t.toStage === 'ELIMINATED' ? 'bg-red-500' : 'bg-primary'
-                                            )} />
-                                            <div>
+                                            <div className={cn(
+                                                "w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white",
+                                                t.eventType === 'STAGE_CHANGE' ? 'bg-primary' :
+                                                    t.eventType === 'CONTRACT' ? 'bg-emerald-500' :
+                                                        t.eventType === 'CLOSED' ? 'bg-red-500' :
+                                                            t.eventType === 'BATCH' ? 'bg-purple-500' :
+                                                                t.eventType === 'COMMUNICATION' ? 'bg-blue-500' : 'bg-slate-400'
+                                            )}>
+                                                {t.eventType === 'STAGE_CHANGE' && <ArrowRight className="w-3 h-3" />}
+                                                {t.eventType === 'CONTRACT' && <FileText className="w-3 h-3" />}
+                                                {t.eventType === 'CLOSED' && <X className="w-3 h-3" />}
+                                                {t.eventType === 'BATCH' && <BookOpen className="w-3 h-3" />}
+                                                {t.eventType === 'COMMUNICATION' && <Users className="w-3 h-3" />}
+                                            </div>
+                                            <div className="pb-4">
                                                 <p className="text-xs text-muted-foreground">
-                                                    {new Date(t.changedAt).toLocaleDateString()}
+                                                    {new Date(t.eventDate).toLocaleDateString()}
                                                 </p>
-                                                <p className="font-medium text-sm">{t.toStage.replace('_', ' ')}</p>
-                                                <p className="text-xs text-muted-foreground">{t.reason}</p>
+                                                <p className="font-medium text-sm">{t.title}</p>
+                                                {t.description && (
+                                                    <p className="text-xs text-muted-foreground">{t.description}</p>
+                                                )}
                                             </div>
                                         </div>
                                     ))}

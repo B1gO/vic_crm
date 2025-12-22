@@ -6,73 +6,65 @@ VicCRM is an internal SaaS for managing software engineer candidates from Recrui
 
 ```
 vic_crm/
-├── frontend/                    # Next.js 16 + TailwindCSS v4
-│   ├── app/                    # App Router pages
-│   │   ├── candidates/         # Candidate list & detail
-│   │   ├── batches/           # Batch list & detail
-│   │   └── users/             # User management
-│   ├── components/            # React components
-│   ├── lib/                   # API client, utilities
-│   └── types/                 # TypeScript definitions
-│
-└── backend/                     # Spring Boot 3.4 + Maven
-    └── src/main/java/com/vic/crm/
-        ├── controller/        # REST APIs
-        ├── service/           # Business logic
-        ├── repository/        # Data access
-        ├── entity/            # JPA entities
-        ├── dto/               # BatchDetail, RecruiterStats
-        └── enums/             # LifecycleStage, WorkAuth, etc.
+├── frontend/     # Next.js 16 + TailwindCSS v4
+│   └── package.json
+├── backend/      # Spring Boot 3.4 + Maven + Java 17
+│   └── pom.xml
+└── README.md
 ```
 
-## Quick Start
-
-### Backend
-```bash
-cd backend && ./mvnw spring-boot:run
-```
-→ http://localhost:8080
+## Getting Started
 
 ### Frontend
 ```bash
 cd frontend && npm install && npm run dev
 ```
-→ http://localhost:3000
+Open http://localhost:3000
+
+### Backend
+```bash
+cd backend && ./mvnw spring-boot:run
+```
+Server runs on http://localhost:8080
+
+**H2 Console**: http://localhost:8080/h2-console
+- JDBC URL: `jdbc:h2:mem:viccrm`
+- Username: `sa`
+- Password: (empty)
 
 ---
 
-## Data Model
+## Tech Stack
+- **Frontend**: Next.js 16, React 19, TailwindCSS v4
+- **Backend**: Spring Boot 3.4, Java 17, H2/PostgreSQL, Maven
 
-```
-Candidate ──┬── ManyToOne ──▶ Recruiter (User)
-            └── ManyToMany ──▶ Batches []
-
-Batch ─────── ManyToOne ──▶ Trainer (User)
-```
+---
 
 ## API Endpoints
 
+### Users (Recruiters & Admins)
+- [x] `GET /api/users` - List all users
+- [x] `GET /api/users/{id}` - Get user by ID
+- [x] `GET /api/users?role={role}` - Filter users by role (ADMIN, RECRUITER)
+- [x] `POST /api/users` - Create user
+- [x] `PUT /api/users/{id}` - Update user
+- [x] `DELETE /api/users/{id}` - Delete user
+
 ### Candidates
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/candidates` | List all |
-| POST | `/api/candidates` | Create |
-| PUT | `/api/candidates/{id}` | Update |
-| POST | `/api/candidates/{id}/transition` | Change stage |
-| POST | `/api/candidates/{id}/batches/{batchId}` | Assign to batch |
+- [x] `GET /api/candidates` - List all candidates
+- [x] `GET /api/candidates/{id}` - Get candidate by ID
+- [x] `GET /api/candidates?stage={stage}` - Filter by lifecycle stage
+- [x] `POST /api/candidates` - Create candidate
+- [x] `PUT /api/candidates/{id}` - Update candidate
+- [x] `POST /api/candidates/{id}/transition` - Change lifecycle stage
+- [x] `GET /api/candidates/{id}/transitions` - Get transition history
 
 ### Batches
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/batches` | List all |
-| GET | `/api/batches/{id}/detail` | Get with recruiter stats |
-| POST | `/api/batches` | Create |
-
-### Users
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users` | List all |
-| POST | `/api/users` | Create |
+- [x] `GET /api/batches` - List all batches
+- [x] `GET /api/batches/{id}` - Get batch by ID
+- [x] `POST /api/batches` - Create batch
+- [x] `PUT /api/batches/{id}` - Update batch
+- [x] `DELETE /api/batches/{id}` - Delete batch
 
 ---
 
@@ -84,7 +76,11 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
  ELIMINATED   ELIMINATED   ELIMINATED
 ```
 
-## Dev Tools
-
-- **H2 Console**: http://localhost:8080/h2-console  
-  JDBC URL: `jdbc:h2:mem:viccrm`, User: `sa`
+### Stage Transitions
+| From | Allowed To |
+|------|------------|
+| RECRUITMENT | TRAINING, ELIMINATED |
+| TRAINING | MARKET_READY, ELIMINATED |
+| MARKET_READY | PLACED, ELIMINATED |
+| PLACED | (none) |
+| ELIMINATED | (none) |

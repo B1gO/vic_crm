@@ -6,7 +6,25 @@
 export type LifecycleStage = 'RECRUITMENT' | 'TRAINING' | 'MARKET_READY' | 'PLACED' | 'ELIMINATED';
 export type WorkAuth = 'CITIZEN' | 'GC' | 'OPT' | 'H1B' | 'CPT' | 'OTHER';
 export type UserRole = 'ADMIN' | 'RECRUITER' | 'TRAINER' | 'MANAGER';
-export type BatchStatus = 'ACTIVE' | 'COMPLETED';
+
+export type TimelineEventType =
+    | 'STAGE_CHANGE'
+    | 'COMMUNICATION'
+    | 'CONTRACT'
+    | 'BATCH'
+    | 'READINESS'
+    | 'MOCK'
+    | 'INTERVIEW'
+    | 'OUTCOME'
+    | 'CLOSED';
+
+export type CloseReason =
+    | 'RETURNED_HOME'
+    | 'FOUND_FULLTIME'
+    | 'OTHER_OPPORTUNITY'
+    | 'NO_HOMEWORK'
+    | 'BEHAVIOR_ISSUE'
+    | 'NO_RESPONSE';
 
 // === Entities ===
 export interface User {
@@ -23,8 +41,6 @@ export interface Batch {
     name: string;
     startDate: string;
     endDate: string;
-    status: BatchStatus;
-    trainer: User | null;
     createdAt: string;
 }
 
@@ -45,7 +61,7 @@ export interface Candidate {
     education: string | null;
     // Workspace
     lifecycleStage: LifecycleStage;
-    batches: Batch[];  // ManyToMany: 1-2 batches
+    batch: Batch | null;
     recruiter: User | null;
     resumeReady: boolean;
     completionRate: number;
@@ -54,32 +70,18 @@ export interface Candidate {
     updatedAt: string;
 }
 
-export interface StageTransition {
+export interface TimelineEvent {
     id: number;
-    fromStage: LifecycleStage;
-    toStage: LifecycleStage;
-    reason: string;
-    changedBy: User | null;
-    changedAt: string;
+    eventType: TimelineEventType;
+    subType?: string;
+    fromStage?: LifecycleStage;
+    toStage?: LifecycleStage;
+    closeReason?: CloseReason;
+    title: string;
+    description?: string;
+    eventDate: string;
+    createdBy?: User;
 }
 
-// === DTOs ===
-export interface RecruiterStats {
-    recruiterId: number;
-    recruiterName: string;
-    sourced: number;
-    ready: number;
-    placed: number;
-}
-
-export interface BatchDetail {
-    id: number;
-    name: string;
-    startDate: string;
-    endDate: string;
-    status: BatchStatus;
-    trainer: User | null;
-    createdAt: string;
-    totalCandidates: number;
-    recruiterStats: RecruiterStats[];
-}
+// Legacy alias for backwards compatibility
+export type StageTransition = TimelineEvent;

@@ -1,18 +1,15 @@
 package com.vic.crm.entity;
 
 import com.vic.crm.enums.LifecycleStage;
-import com.vic.crm.enums.WorkAuth;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @Table(name = "candidates")
@@ -26,77 +23,52 @@ public class Candidate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // === Basic Profile ===
-    @NotBlank
+    @Column(nullable = false)
     private String name;
 
-    @Email
     private String email;
-
     private String phone;
-
     private String wechatId;
-
     private String wechatName;
-
     private String discordName;
-
     private String techTags;
 
-    @Enumerated(EnumType.STRING)
-    private WorkAuth workAuth;
+    // Work authorization
+    private String workAuth;
 
+    // Location
     private String city;
-
     private String state;
-
     private Boolean relocation;
 
+    // Education
     private String education;
 
-    // === Workspace ===
+    // Lifecycle
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LifecycleStage lifecycleStage;
+    private LifecycleStage lifecycleStage = LifecycleStage.RECRUITMENT;
 
-    // Many-to-Many: Candidate can join 1-2 batches
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "candidate_batches", joinColumns = @JoinColumn(name = "candidate_id"), inverseJoinColumns = @JoinColumn(name = "batch_id"))
-    @Builder.Default
-    private Set<Batch> batches = new HashSet<>();
+    // Relationships
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "batch_id")
+    private Batch batch;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "recruiter_id")
     private User recruiter;
 
+    // Readiness flags
     private Boolean resumeReady;
-
     private Integer completionRate;
 
+    // Notes
+    @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @Column(updatable = false)
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        if (lifecycleStage == null) {
-            lifecycleStage = LifecycleStage.RECRUITMENT;
-        }
-        if (resumeReady == null) {
-            resumeReady = false;
-        }
-        if (completionRate == null) {
-            completionRate = 0;
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

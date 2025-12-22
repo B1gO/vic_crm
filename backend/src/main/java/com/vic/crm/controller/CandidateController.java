@@ -1,15 +1,15 @@
 package com.vic.crm.controller;
 
+import com.vic.crm.dto.TimelineEventRequest;
 import com.vic.crm.dto.TransitionRequest;
 import com.vic.crm.entity.Candidate;
-import com.vic.crm.entity.StageTransition;
+import com.vic.crm.entity.TimelineEvent;
 import com.vic.crm.entity.User;
 import com.vic.crm.enums.LifecycleStage;
 import com.vic.crm.service.CandidateService;
 import com.vic.crm.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,13 +55,19 @@ public class CandidateController {
         return candidateService.transition(id, request.getToStage(), request.getReason(), changedBy);
     }
 
-    @GetMapping("/{id}/transitions")
-    public List<StageTransition> getTransitionHistory(@PathVariable Long id) {
-        return candidateService.getTransitionHistory(id);
+    @GetMapping("/{id}/timeline")
+    public List<TimelineEvent> getTimeline(@PathVariable Long id) {
+        return candidateService.getTimeline(id);
     }
 
-    @PostMapping("/{candidateId}/batches/{batchId}")
-    public Candidate assignToBatch(@PathVariable Long candidateId, @PathVariable Long batchId) {
-        return candidateService.assignToBatch(candidateId, batchId);
+    @PostMapping("/{id}/timeline")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TimelineEvent addTimelineEvent(@PathVariable Long id, @RequestBody TimelineEventRequest request) {
+        User createdBy = null;
+        if (request.getCreatedById() != null) {
+            createdBy = userService.findById(request.getCreatedById());
+        }
+        return candidateService.addTimelineEvent(id, request.getEventType(), request.getSubType(),
+                request.getTitle(), request.getDescription(), request.getCloseReason(), createdBy);
     }
 }

@@ -1,9 +1,10 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, StageTransition, LifecycleStage, BatchDetail } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, LifecycleStage } from '@/types';
 
-export type { User, Batch, Candidate, StageTransition, LifecycleStage, WorkAuth, UserRole, BatchDetail, RecruiterStats, BatchStatus } from '@/types';
+// Re-export types for convenience
+export type { User, Batch, Candidate, TimelineEvent, LifecycleStage, WorkAuth, UserRole, TimelineEventType, CloseReason } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -37,7 +38,6 @@ export const usersApi = {
 export const batchesApi = {
     getAll: () => fetchApi<Batch[]>('/api/batches'),
     getById: (id: number) => fetchApi<Batch>(`/api/batches/${id}`),
-    getDetail: (id: number) => fetchApi<BatchDetail>(`/api/batches/${id}/detail`),
     create: (data: Partial<Batch>) => fetchApi<Batch>('/api/batches', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<Batch>) => fetchApi<Batch>(`/api/batches/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => fetch(`${API_BASE_URL}/api/batches/${id}`, { method: 'DELETE' }),
@@ -54,5 +54,7 @@ export const candidatesApi = {
             method: 'POST',
             body: JSON.stringify({ toStage, reason })
         }),
-    getTransitions: (id: number) => fetchApi<StageTransition[]>(`/api/candidates/${id}/transitions`),
+    getTimeline: (id: number) => fetchApi<TimelineEvent[]>(`/api/candidates/${id}/timeline`),
+    // Legacy alias
+    getTransitions: (id: number) => fetchApi<TimelineEvent[]>(`/api/candidates/${id}/timeline`),
 };
