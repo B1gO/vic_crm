@@ -57,7 +57,8 @@ Server runs on http://localhost:8080
 - [x] `POST /api/candidates` - Create candidate
 - [x] `PUT /api/candidates/{id}` - Update candidate
 - [x] `POST /api/candidates/{id}/transition` - Change lifecycle stage
-- [x] `GET /api/candidates/{id}/transitions` - Get transition history
+- [x] `GET /api/candidates/{id}/timeline` - Get candidate timeline events
+- [x] `POST /api/candidates/{id}/timeline` - Add custom timeline event
 
 ### Batches
 - [x] `GET /api/batches` - List all batches
