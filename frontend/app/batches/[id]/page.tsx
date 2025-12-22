@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { batchesApi, candidatesApi, Batch, Candidate } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StageBadge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, Users, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, ChevronRight, BarChart3 } from 'lucide-react';
 
 export default function BatchDetailPage() {
     const params = useParams();
@@ -99,6 +99,59 @@ export default function BatchDetailPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Sourcing Performance */}
+            <Card>
+                <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                        <BarChart3 className="w-5 h-5 text-primary" />
+                        <span className="uppercase tracking-wide">Sourcing Performance</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    {(() => {
+                        // Group candidates by recruiter
+                        const recruiterStats = candidates.reduce((acc, c) => {
+                            const recruiterName = c.recruiter?.name || 'Unassigned';
+                            if (!acc[recruiterName]) {
+                                acc[recruiterName] = { sourced: 0, ready: 0, placed: 0 };
+                            }
+                            acc[recruiterName].sourced++;
+                            if (c.lifecycleStage === 'MARKET_READY') acc[recruiterName].ready++;
+                            if (c.lifecycleStage === 'PLACED') acc[recruiterName].placed++;
+                            return acc;
+                        }, {} as Record<string, { sourced: number; ready: number; placed: number }>);
+
+                        const recruiterNames = Object.keys(recruiterStats);
+                        if (recruiterNames.length === 0) {
+                            return <div className="p-8 text-center text-muted-foreground">No sourcing data available</div>;
+                        }
+
+                        return (
+                            <table className="w-full">
+                                <thead className="border-b border-border bg-muted/30">
+                                    <tr className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                        <th className="p-4">Recruiter</th>
+                                        <th className="p-4 text-center">Sourced</th>
+                                        <th className="p-4 text-center">Ready</th>
+                                        <th className="p-4 text-center">Placed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {recruiterNames.map(name => (
+                                        <tr key={name} className="border-b border-border last:border-0">
+                                            <td className="p-4 font-medium">{name}</td>
+                                            <td className="p-4 text-center">{recruiterStats[name].sourced}</td>
+                                            <td className="p-4 text-center font-semibold text-blue-600">{recruiterStats[name].ready}</td>
+                                            <td className="p-4 text-center font-semibold text-green-600">{recruiterStats[name].placed}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        );
+                    })()}
+                </CardContent>
+            </Card>
 
             {/* Candidates List */}
             <Card>

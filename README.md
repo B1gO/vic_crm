@@ -95,6 +95,11 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 - **Career Timeline**: Track all events from recruitment to placement
 - **Stage Transitions**: Move candidates through RECRUITMENT → TRAINING → MARKET_READY → PLACED
 
+### Batch Management
+- **Batch Detail Page**: View batch info, stats, and assigned candidates
+- **Sourcing Performance**: Track recruiter sourcing stats (sourced, ready, placed)
+- **Stage Statistics**: See counts for training, market ready, and placed candidates
+
 ### Timeline Event Types
 | Type | Description |
 |------|-------------|
