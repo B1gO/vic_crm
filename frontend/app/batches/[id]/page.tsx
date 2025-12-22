@@ -5,8 +5,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { batchesApi, candidatesApi, Batch, Candidate } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { StageBadge } from '@/components/ui/badge';
-import { ArrowLeft, Calendar, Users, ChevronRight, BarChart3 } from 'lucide-react';
+import { CandidateTable } from '@/components/CandidateTable';
+import { ArrowLeft, Calendar, Users, BarChart3, Search } from 'lucide-react';
 
 export default function BatchDetailPage() {
     const params = useParams();
@@ -14,6 +14,7 @@ export default function BatchDetailPage() {
     const [batch, setBatch] = useState<Batch | null>(null);
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         loadData();
@@ -155,52 +156,28 @@ export default function BatchDetailPage() {
 
             {/* Candidates List */}
             <Card>
-                <CardHeader>
-                    <CardTitle>Candidates in Batch</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                    <CardTitle className="text-lg">Candidates in Batch</CardTitle>
+                    <div className="relative w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                            type="text"
+                            placeholder="Search candidates..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    {candidates.length === 0 ? (
-                        <div className="p-8 text-center text-muted-foreground">
-                            No candidates assigned to this batch yet
-                        </div>
-                    ) : (
-                        <table className="w-full">
-                            <thead className="border-b border-border bg-muted/30">
-                                <tr className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    <th className="p-4">Name</th>
-                                    <th className="p-4">Stage</th>
-                                    <th className="p-4">Location</th>
-                                    <th className="p-4">Recruiter</th>
-                                    <th className="p-4 w-16"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {candidates.map(candidate => (
-                                    <tr key={candidate.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                                        <td className="p-4">
-                                            <Link href={`/candidates/${candidate.id}`} className="font-medium hover:text-primary transition-colors">
-                                                {candidate.name}
-                                            </Link>
-                                        </td>
-                                        <td className="p-4">
-                                            <StageBadge stage={candidate.lifecycleStage} />
-                                        </td>
-                                        <td className="p-4 text-muted-foreground">
-                                            {[candidate.city, candidate.state].filter(Boolean).join(', ') || '-'}
-                                        </td>
-                                        <td className="p-4 text-muted-foreground">
-                                            {candidate.recruiter?.name || '-'}
-                                        </td>
-                                        <td className="p-4">
-                                            <Link href={`/candidates/${candidate.id}`}>
-                                                <ChevronRight className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                    <CandidateTable
+                        candidates={candidates.filter(c =>
+                            c.name.toLowerCase().includes(search.toLowerCase()) ||
+                            c.city?.toLowerCase().includes(search.toLowerCase()) ||
+                            c.email?.toLowerCase().includes(search.toLowerCase())
+                        )}
+                        emptyMessage={search ? 'No candidates match your search' : 'No candidates assigned to this batch yet'}
+                    />
                 </CardContent>
             </Card>
         </div>

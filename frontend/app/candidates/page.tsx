@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import Link from 'next/link';
 import { candidatesApi, usersApi, batchesApi, Candidate, User, Batch, LifecycleStage, WorkAuth } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { StageBadge } from '@/components/ui/badge';
-import { Plus, Search, ChevronRight } from 'lucide-react';
+import { CandidateTable } from '@/components/CandidateTable';
+import { Plus, Search } from 'lucide-react';
 
 const stageLabels: Record<LifecycleStage, string> = {
     RECRUITMENT: 'Recruitment',
@@ -14,15 +13,6 @@ const stageLabels: Record<LifecycleStage, string> = {
     MARKET_READY: 'Marketing',
     PLACED: 'Placed',
     ELIMINATED: 'Terminated',
-};
-
-const workAuthLabels: Record<WorkAuth, string> = {
-    CITIZEN: 'Citizen',
-    GC: 'GC',
-    OPT: 'OPT',
-    H1B: 'H1B',
-    CPT: 'CPT',
-    OTHER: 'Other',
 };
 
 export default function CandidatesPage() {
@@ -310,51 +300,11 @@ export default function CandidatesPage() {
                 <CardContent className="p-0">
                     {loading ? (
                         <div className="p-8 text-center text-muted-foreground">Loading...</div>
-                    ) : filteredCandidates.length === 0 ? (
-                        <div className="p-8 text-center text-muted-foreground">
-                            {search ? 'No candidates match your search' : 'No candidates yet'}
-                        </div>
                     ) : (
-                        <table className="w-full">
-                            <thead className="border-b border-border bg-muted/30">
-                                <tr className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                    <th className="p-4">Name</th>
-                                    <th className="p-4">Stage</th>
-                                    <th className="p-4">Location</th>
-                                    <th className="p-4">Visa</th>
-                                    <th className="p-4 w-16">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredCandidates.map(candidate => (
-                                    <tr key={candidate.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                                        <td className="p-4">
-                                            <Link href={`/candidates/${candidate.id}`} className="font-medium hover:text-primary transition-colors">
-                                                {candidate.name}
-                                            </Link>
-                                        </td>
-                                        <td className="p-4">
-                                            <StageBadge stage={candidate.lifecycleStage} />
-                                        </td>
-                                        <td className="p-4 text-muted-foreground">
-                                            {[candidate.city, candidate.state].filter(Boolean).join(', ') || '-'}
-                                        </td>
-                                        <td className="p-4">
-                                            {candidate.workAuth ? (
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-800 text-white">
-                                                    {workAuthLabels[candidate.workAuth]}
-                                                </span>
-                                            ) : '-'}
-                                        </td>
-                                        <td className="p-4">
-                                            <Link href={`/candidates/${candidate.id}`}>
-                                                <ChevronRight className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <CandidateTable
+                            candidates={filteredCandidates}
+                            emptyMessage={search ? 'No candidates match your search' : 'No candidates yet'}
+                        />
                     )}
                 </CardContent>
             </Card>
