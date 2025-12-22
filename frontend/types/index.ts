@@ -16,7 +16,12 @@ export type TimelineEventType =
     | 'MOCK'
     | 'INTERVIEW'
     | 'OUTCOME'
-    | 'CLOSED';
+    | 'CLOSED'
+    | 'VENDOR_SUBMIT'
+    | 'VENDOR_OA'
+    | 'VENDOR_INTERVIEW'
+    | 'CLIENT_SUBMIT'
+    | 'CLIENT_INTERVIEW';
 
 export type CloseReason =
     | 'RETURNED_HOME'
@@ -25,6 +30,9 @@ export type CloseReason =
     | 'NO_HOMEWORK'
     | 'BEHAVIOR_ISSUE'
     | 'NO_RESPONSE';
+
+export type SubmissionStatus = 'VENDOR_SCREENING' | 'CLIENT_ROUND' | 'OFFERED' | 'PLACED' | 'REJECTED';
+export type ScreeningType = 'OA' | 'INTERVIEW' | 'DIRECT';
 
 // === Entities ===
 export interface User {
@@ -42,6 +50,26 @@ export interface Batch {
     startDate: string;
     endDate: string;
     createdAt: string;
+}
+
+export interface Vendor {
+    id: number;
+    companyName: string;
+    contactName: string | null;
+    email: string | null;
+    phone: string | null;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Client {
+    id: number;
+    companyName: string;
+    industry: string | null;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Candidate {
@@ -72,6 +100,33 @@ export interface Candidate {
     updatedAt: string;
 }
 
+export interface Submission {
+    id: number;
+    candidate: Candidate;
+    vendor: Vendor;
+    client: Client | null;
+    positionTitle: string;
+    status: SubmissionStatus;
+    screeningType: ScreeningType | null;
+    currentRound: number;
+    notes: string | null;
+    submittedAt: string;
+    updatedAt: string;
+}
+
+export interface InterviewExperience {
+    id: number;
+    techCategory: string;
+    client: Client | null;
+    vendor: Vendor | null;
+    candidate: Candidate | null;
+    techTags: string | null;
+    recordingUrl: string | null;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface TimelineEvent {
     id: number;
     eventType: TimelineEventType;
@@ -87,3 +142,4 @@ export interface TimelineEvent {
 
 // Legacy alias for backwards compatibility
 export type StageTransition = TimelineEvent;
+

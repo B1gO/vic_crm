@@ -9,8 +9,14 @@ public enum TimelineEventType {
     CONTRACT, // contract_sent, contract_signed
     BATCH, // batch_started, batch_ended
     READINESS, // resume_ready
-    MOCK, // tech_mock, general_mock (future)
-    INTERVIEW, // vendor_oa, client (future)
+    MOCK, // tech_mock, general_mock
+    INTERVIEW, // general interview events
     OUTCOME, // offer, placed
-    CLOSED // closed with reason
+    CLOSED, // closed with reason
+    // Vendor/Client submission events
+    VENDOR_SUBMIT, // submitted to vendor
+    VENDOR_OA, // vendor online assessment
+    VENDOR_INTERVIEW, // vendor interview
+    CLIENT_SUBMIT, // submitted to client
+    CLIENT_INTERVIEW // client interview round
 }
