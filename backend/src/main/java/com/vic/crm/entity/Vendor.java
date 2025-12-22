@@ -9,6 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "vendors")
@@ -31,6 +33,11 @@ public class Vendor {
 
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "vendor_clients", joinColumns = @JoinColumn(name = "vendor_id"), inverseJoinColumns = @JoinColumn(name = "client_id"))
+    @Builder.Default
+    private Set<Client> clients = new HashSet<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;

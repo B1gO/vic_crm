@@ -59,6 +59,7 @@ export interface Vendor {
     email: string | null;
     phone: string | null;
     notes: string | null;
+    clients: Client[];
     createdAt: string;
     updatedAt: string;
 }

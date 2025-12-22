@@ -2,44 +2,72 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { vendorsApi, Vendor } from '@/lib/api';
+import { vendorsApi, clientsApi, Vendor, Client } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Building2, Trash2, Edit, Mail, Phone, ChevronRight } from 'lucide-react';
+import { Plus, Building2, Trash2, Edit, Mail, Phone, Building } from 'lucide-react';
 
 export default function VendorsPage() {
     const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [formData, setFormData] = useState({ companyName: '', contactName: '', email: '', phone: '', notes: '' });
+    const [formData, setFormData] = useState({
+        companyName: '',
+        contactName: '',
+        email: '',
+        phone: '',
+        notes: '',
+        clientIds: [] as number[]
+    });
 
     useEffect(() => {
-        loadVendors();
+        loadData();
     }, []);
 
-    const loadVendors = () => {
-        vendorsApi.getAll()
-            .then(setVendors)
-            .catch(console.error)
-            .finally(() => setLoading(false));
+    const loadData = async () => {
+        try {
+            const [vendorsData, clientsData] = await Promise.all([
+                vendorsApi.getAll(),
+                clientsApi.getAll()
+            ]);
+            setVendors(vendorsData);
+            setClients(clientsData);
+        } catch (error) {
+            console.error('Failed to load data:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const payload = {
+                companyName: formData.companyName,
+                contactName: formData.contactName,
+                email: formData.email,
+                phone: formData.phone,
+                notes: formData.notes,
+                clients: formData.clientIds.map(id => ({ id }))
+            };
             if (editingId) {
-                await vendorsApi.update(editingId, formData);
+                await vendorsApi.update(editingId, payload as unknown as Partial<Vendor>);
             } else {
-                await vendorsApi.create(formData);
+                await vendorsApi.create(payload as unknown as Partial<Vendor>);
             }
-            setFormData({ companyName: '', contactName: '', email: '', phone: '', notes: '' });
-            setShowForm(false);
-            setEditingId(null);
-            loadVendors();
+            resetForm();
+            loadData();
         } catch (error) {
             console.error('Failed to save vendor:', error);
         }
+    };
+
+    const resetForm = () => {
+        setFormData({ companyName: '', contactName: '', email: '', phone: '', notes: '', clientIds: [] });
+        setShowForm(false);
+        setEditingId(null);
     };
 
     const handleEdit = (vendor: Vendor) => {
@@ -49,6 +77,7 @@ export default function VendorsPage() {
             email: vendor.email || '',
             phone: vendor.phone || '',
             notes: vendor.notes || '',
+            clientIds: vendor.clients?.map(c => c.id) || []
         });
         setEditingId(vendor.id);
         setShowForm(true);
@@ -58,10 +87,19 @@ export default function VendorsPage() {
         if (!confirm('Delete this vendor?')) return;
         try {
             await vendorsApi.delete(id);
-            loadVendors();
+            loadData();
         } catch (error) {
             console.error('Failed to delete vendor:', error);
         }
+    };
+
+    const toggleClient = (clientId: number) => {
+        setFormData(prev => ({
+            ...prev,
+            clientIds: prev.clientIds.includes(clientId)
+                ? prev.clientIds.filter(id => id !== clientId)
+                : [...prev.clientIds, clientId]
+        }));
     };
 
     return (
@@ -71,7 +109,14 @@ export default function VendorsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Vendors</h1>
                     <p className="text-muted-foreground mt-1">Manage vendor companies</p>
                 </div>
-                <Button onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ companyName: '', contactName: '', email: '', phone: '', notes: '' }); }}>
+                <Button onClick={() => {
+                    if (showForm && !editingId) {
+                        setShowForm(false);
+                    } else {
+                        resetForm();
+                        setShowForm(true);
+                    }
+                }}>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Vendor
                 </Button>
@@ -128,6 +173,29 @@ export default function VendorsPage() {
                                 </div>
                             </div>
                             <div>
+                                <label className="text-sm font-medium mb-1 block">Associated Clients</label>
+                                <div className="flex flex-wrap gap-2 p-3 border border-border rounded-lg bg-background min-h-[60px]">
+                                    {clients.length === 0 ? (
+                                        <span className="text-sm text-muted-foreground">No clients available</span>
+                                    ) : (
+                                        clients.map(client => (
+                                            <button
+                                                key={client.id}
+                                                type="button"
+                                                onClick={() => toggleClient(client.id)}
+                                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm transition-colors ${formData.clientIds.includes(client.id)
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                                    }`}
+                                            >
+                                                <Building className="w-3 h-3 mr-1" />
+                                                {client.companyName}
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                            <div>
                                 <label className="text-sm font-medium mb-1 block">Notes</label>
                                 <textarea
                                     value={formData.notes}
@@ -139,7 +207,7 @@ export default function VendorsPage() {
                             </div>
                             <div className="flex gap-2">
                                 <Button type="submit">{editingId ? 'Update' : 'Create'}</Button>
-                                <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingId(null); }}>
+                                <Button type="button" variant="outline" onClick={resetForm}>
                                     Cancel
                                 </Button>
                             </div>
@@ -194,6 +262,18 @@ export default function VendorsPage() {
                                         </p>
                                     )}
                                 </div>
+                                {vendor.clients && vendor.clients.length > 0 && (
+                                    <div className="mt-3 pt-3 border-t border-border">
+                                        <p className="text-xs text-muted-foreground mb-2">Clients:</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {vendor.clients.map(client => (
+                                                <span key={client.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-500/10 text-blue-600">
+                                                    {client.companyName}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     ))}
