@@ -1,5 +1,6 @@
 package com.vic.crm.entity;
 
+import com.vic.crm.enums.BatchStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -29,11 +30,22 @@ public class Batch {
 
     private LocalDate endDate;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private BatchStatus status = BatchStatus.ACTIVE;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "trainer_id")
+    private User trainer;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (status == null) {
+            status = BatchStatus.ACTIVE;
+        }
     }
 }

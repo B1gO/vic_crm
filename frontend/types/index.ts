@@ -6,6 +6,7 @@
 export type LifecycleStage = 'RECRUITMENT' | 'TRAINING' | 'MARKET_READY' | 'PLACED' | 'ELIMINATED';
 export type WorkAuth = 'CITIZEN' | 'GC' | 'OPT' | 'H1B' | 'CPT' | 'OTHER';
 export type UserRole = 'ADMIN' | 'RECRUITER' | 'TRAINER' | 'MANAGER';
+export type BatchStatus = 'ACTIVE' | 'COMPLETED';
 
 // === Entities ===
 export interface User {
@@ -22,6 +23,8 @@ export interface Batch {
     name: string;
     startDate: string;
     endDate: string;
+    status: BatchStatus;
+    trainer: User | null;
     createdAt: string;
 }
 
@@ -42,7 +45,7 @@ export interface Candidate {
     education: string | null;
     // Workspace
     lifecycleStage: LifecycleStage;
-    batch: Batch | null;
+    batches: Batch[];  // ManyToMany: 1-2 batches
     recruiter: User | null;
     resumeReady: boolean;
     completionRate: number;
@@ -58,4 +61,25 @@ export interface StageTransition {
     reason: string;
     changedBy: User | null;
     changedAt: string;
+}
+
+// === DTOs ===
+export interface RecruiterStats {
+    recruiterId: number;
+    recruiterName: string;
+    sourced: number;
+    ready: number;
+    placed: number;
+}
+
+export interface BatchDetail {
+    id: number;
+    name: string;
+    startDate: string;
+    endDate: string;
+    status: BatchStatus;
+    trainer: User | null;
+    createdAt: string;
+    totalCandidates: number;
+    recruiterStats: RecruiterStats[];
 }

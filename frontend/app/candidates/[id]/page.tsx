@@ -105,9 +105,9 @@ export default function CandidateDetailPage() {
                                 <StageBadge stage={candidate.lifecycleStage} />
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                {candidate.batch && (
+                                {candidate.batches && candidate.batches.length > 0 && (
                                     <span className="flex items-center gap-1">
-                                        📚 {candidate.batch.name}
+                                        📚 {candidate.batches.map(b => b.name).join(', ')}
                                     </span>
                                 )}
                                 {candidate.recruiter && (

@@ -11,6 +11,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "candidates")
@@ -39,7 +41,7 @@ public class Candidate {
 
     private String discordName;
 
-    private String techTags; // Comma-separated skills
+    private String techTags;
 
     @Enumerated(EnumType.STRING)
     private WorkAuth workAuth;
@@ -57,17 +59,19 @@ public class Candidate {
     @Column(nullable = false)
     private LifecycleStage lifecycleStage;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "batch_id")
-    private Batch batch;
+    // Many-to-Many: Candidate can join 1-2 batches
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "candidate_batches", joinColumns = @JoinColumn(name = "candidate_id"), inverseJoinColumns = @JoinColumn(name = "batch_id"))
+    @Builder.Default
+    private Set<Batch> batches = new HashSet<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "recruiter_id")
     private User recruiter;
 
     private Boolean resumeReady;
 
-    private Integer completionRate; // 0-100%
+    private Integer completionRate;
 
     private String notes;
 

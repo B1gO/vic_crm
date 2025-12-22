@@ -59,4 +59,9 @@ public class CandidateController {
     public List<StageTransition> getTransitionHistory(@PathVariable Long id) {
         return candidateService.getTransitionHistory(id);
     }
+
+    @PostMapping("/{candidateId}/batches/{batchId}")
+    public Candidate assignToBatch(@PathVariable Long candidateId, @PathVariable Long batchId) {
+        return candidateService.assignToBatch(candidateId, batchId);
+    }
 }

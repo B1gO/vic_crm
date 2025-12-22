@@ -9,11 +9,9 @@ vic_crm/
 ├── frontend/                    # Next.js 16 + TailwindCSS v4
 │   ├── app/                    # App Router pages
 │   │   ├── candidates/         # Candidate list & detail
-│   │   ├── batches/           # Batch management
+│   │   ├── batches/           # Batch list & detail
 │   │   └── users/             # User management
 │   ├── components/            # React components
-│   │   ├── layout/           # Sidebar, AppShell
-│   │   └── ui/               # Card, Button, Badge
 │   ├── lib/                   # API client, utilities
 │   └── types/                 # TypeScript definitions
 │
@@ -23,8 +21,8 @@ vic_crm/
         ├── service/           # Business logic
         ├── repository/        # Data access
         ├── entity/            # JPA entities
-        ├── enums/             # LifecycleStage, WorkAuth, Role
-        └── config/            # CORS, etc.
+        ├── dto/               # BatchDetail, RecruiterStats
+        └── enums/             # LifecycleStage, WorkAuth, etc.
 ```
 
 ## Quick Start
@@ -43,58 +41,38 @@ cd frontend && npm install && npm run dev
 
 ---
 
-## API Endpoints
+## Data Model
 
-### Users
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users` | List all users |
-| POST | `/api/users` | Create user |
-| PUT | `/api/users/{id}` | Update user |
-| DELETE | `/api/users/{id}` | Delete user |
+```
+Candidate ──┬── ManyToOne ──▶ Recruiter (User)
+            └── ManyToMany ──▶ Batches []
+
+Batch ─────── ManyToOne ──▶ Trainer (User)
+```
+
+## API Endpoints
 
 ### Candidates
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/candidates` | List all candidates |
-| GET | `/api/candidates?stage=TRAINING` | Filter by stage |
-| POST | `/api/candidates` | Create candidate |
-| PUT | `/api/candidates/{id}` | Update candidate |
-| POST | `/api/candidates/{id}/transition` | Change lifecycle stage |
-| GET | `/api/candidates/{id}/transitions` | Get transition history |
+| GET | `/api/candidates` | List all |
+| POST | `/api/candidates` | Create |
+| PUT | `/api/candidates/{id}` | Update |
+| POST | `/api/candidates/{id}/transition` | Change stage |
+| POST | `/api/candidates/{id}/batches/{batchId}` | Assign to batch |
 
 ### Batches
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/batches` | List all batches |
-| POST | `/api/batches` | Create batch |
-| PUT | `/api/batches/{id}` | Update batch |
-| DELETE | `/api/batches/{id}` | Delete batch |
+| GET | `/api/batches` | List all |
+| GET | `/api/batches/{id}/detail` | Get with recruiter stats |
+| POST | `/api/batches` | Create |
 
----
-
-## Candidate Data Model
-
-### Basic Profile
-| Field | Type | Description |
-|-------|------|-------------|
-| name | string | Full name |
-| email, phone | string | Contact info |
-| wechatId, wechatName | string | WeChat |
-| discordName | string | Discord |
-| city, state | string | Location |
-| workAuth | enum | CITIZEN, GC, OPT, H1B, CPT |
-| education | string | Educational background |
-| techTags | string | Skills (comma-separated) |
-
-### Workspace
-| Field | Type | Description |
-|-------|------|-------------|
-| lifecycleStage | enum | RECRUITMENT → TRAINING → MARKET_READY → PLACED |
-| batch | FK | Training cohort |
-| recruiter | FK | Owner |
-| resumeReady | boolean | Gate for Marketing |
-| completionRate | int | 0-100% |
+### Users
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/users` | List all |
+| POST | `/api/users` | Create |
 
 ---
 
@@ -108,6 +86,5 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 
 ## Dev Tools
 
-- **H2 Console**: http://localhost:8080/h2-console
-  - JDBC URL: `jdbc:h2:mem:viccrm`
-  - User: `sa`, Password: (empty)
+- **H2 Console**: http://localhost:8080/h2-console  
+  JDBC URL: `jdbc:h2:mem:viccrm`, User: `sa`

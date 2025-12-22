@@ -25,12 +25,11 @@ public class CandidateService {
 
     // Define allowed transitions (Stage Gate rules)
     private static final Map<LifecycleStage, Set<LifecycleStage>> ALLOWED_TRANSITIONS = Map.of(
-        LifecycleStage.RECRUITMENT, Set.of(LifecycleStage.TRAINING, LifecycleStage.ELIMINATED),
-        LifecycleStage.TRAINING, Set.of(LifecycleStage.MARKET_READY, LifecycleStage.ELIMINATED),
-        LifecycleStage.MARKET_READY, Set.of(LifecycleStage.PLACED, LifecycleStage.ELIMINATED),
-        LifecycleStage.PLACED, Set.of(),
-        LifecycleStage.ELIMINATED, Set.of()
-    );
+            LifecycleStage.RECRUITMENT, Set.of(LifecycleStage.TRAINING, LifecycleStage.ELIMINATED),
+            LifecycleStage.TRAINING, Set.of(LifecycleStage.MARKET_READY, LifecycleStage.ELIMINATED),
+            LifecycleStage.MARKET_READY, Set.of(LifecycleStage.PLACED, LifecycleStage.ELIMINATED),
+            LifecycleStage.PLACED, Set.of(),
+            LifecycleStage.ELIMINATED, Set.of());
 
     public List<Candidate> findAll() {
         return candidateRepository.findAll();
@@ -57,7 +56,7 @@ public class CandidateService {
         existing.setEmail(updated.getEmail());
         existing.setPhone(updated.getPhone());
         existing.setNotes(updated.getNotes());
-        existing.setBatch(updated.getBatch());
+        existing.setBatches(updated.getBatches());
         return candidateRepository.save(existing);
     }
 
@@ -73,8 +72,7 @@ public class CandidateService {
         // Validate transition is allowed
         if (!isTransitionAllowed(fromStage, toStage)) {
             throw new InvalidTransitionException(
-                String.format("Transition from %s to %s is not allowed", fromStage, toStage)
-            );
+                    String.format("Transition from %s to %s is not allowed", fromStage, toStage));
         }
 
         // Additional Stage Gate validations
@@ -111,5 +109,14 @@ public class CandidateService {
 
     public List<StageTransition> getTransitionHistory(Long candidateId) {
         return stageTransitionRepository.findByCandidateIdOrderByChangedAtDesc(candidateId);
+    }
+
+    @Transactional
+    public Candidate assignToBatch(Long candidateId, Long batchId) {
+        Candidate candidate = findById(candidateId);
+        com.vic.crm.entity.Batch batch = new com.vic.crm.entity.Batch();
+        batch.setId(batchId);
+        candidate.getBatches().add(batch);
+        return candidateRepository.save(candidate);
     }
 }

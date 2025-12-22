@@ -1,5 +1,6 @@
 package com.vic.crm.controller;
 
+import com.vic.crm.dto.BatchDetail;
 import com.vic.crm.entity.Batch;
 import com.vic.crm.service.BatchService;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,11 @@ public class BatchController {
     @GetMapping("/{id}")
     public Batch getById(@PathVariable Long id) {
         return batchService.findById(id);
+    }
+
+    @GetMapping("/{id}/detail")
+    public BatchDetail getDetail(@PathVariable Long id) {
+        return batchService.getDetail(id);
     }
 
     @PostMapping

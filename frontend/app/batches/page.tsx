@@ -133,9 +133,9 @@ export default function BatchesPage() {
                         <Card key={batch.id} className="hover:shadow-lg transition-shadow duration-200">
                             <CardContent className="p-6">
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="p-2 rounded-lg bg-primary/10">
+                                    <a href={`/batches/${batch.id}`} className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
                                         <Calendar className="w-5 h-5 text-primary" />
-                                    </div>
+                                    </a>
                                     <div className="flex gap-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleEdit(batch)}>
                                             <Edit className="w-4 h-4" />
@@ -145,7 +145,17 @@ export default function BatchesPage() {
                                         </Button>
                                     </div>
                                 </div>
-                                <h3 className="font-semibold text-lg mb-2">{batch.name}</h3>
+                                <a href={`/batches/${batch.id}`} className="block">
+                                    <h3 className="font-semibold text-lg mb-2 hover:text-primary transition-colors">{batch.name}</h3>
+                                </a>
+                                {batch.status && (
+                                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-2 ${batch.status === 'ACTIVE'
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-gray-100 text-gray-700'
+                                        }`}>
+                                        {batch.status}
+                                    </span>
+                                )}
                                 <div className="text-sm text-muted-foreground space-y-1">
                                     <p>Start: {batch.startDate ? new Date(batch.startDate).toLocaleDateString() : '-'}</p>
                                     <p>End: {batch.endDate ? new Date(batch.endDate).toLocaleDateString() : '-'}</p>
