@@ -1,6 +1,7 @@
 package com.vic.crm.entity;
 
 import com.vic.crm.enums.LifecycleStage;
+import com.vic.crm.enums.WorkAuth;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -23,6 +24,7 @@ public class Candidate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // === Basic Profile ===
     @NotBlank
     private String name;
 
@@ -31,6 +33,26 @@ public class Candidate {
 
     private String phone;
 
+    private String wechatId;
+
+    private String wechatName;
+
+    private String discordName;
+
+    private String techTags; // Comma-separated skills
+
+    @Enumerated(EnumType.STRING)
+    private WorkAuth workAuth;
+
+    private String city;
+
+    private String state;
+
+    private Boolean relocation;
+
+    private String education;
+
+    // === Workspace ===
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LifecycleStage lifecycleStage;
@@ -42,6 +64,10 @@ public class Candidate {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "recruiter_id")
     private User recruiter;
+
+    private Boolean resumeReady;
+
+    private Integer completionRate; // 0-100%
 
     private String notes;
 
@@ -56,6 +82,12 @@ public class Candidate {
         updatedAt = LocalDateTime.now();
         if (lifecycleStage == null) {
             lifecycleStage = LifecycleStage.RECRUITMENT;
+        }
+        if (resumeReady == null) {
+            resumeReady = false;
+        }
+        if (completionRate == null) {
+            completionRate = 0;
         }
     }
 
