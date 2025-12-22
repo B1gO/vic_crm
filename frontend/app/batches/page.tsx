@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { batchesApi, Batch } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -133,9 +134,9 @@ export default function BatchesPage() {
                         <Card key={batch.id} className="hover:shadow-lg transition-shadow duration-200">
                             <CardContent className="p-6">
                                 <div className="flex items-start justify-between mb-4">
-                                    <div className="p-2 rounded-lg bg-primary/10">
+                                    <Link href={`/batches/${batch.id}`} className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
                                         <Calendar className="w-5 h-5 text-primary" />
-                                    </div>
+                                    </Link>
                                     <div className="flex gap-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleEdit(batch)}>
                                             <Edit className="w-4 h-4" />
@@ -145,7 +146,9 @@ export default function BatchesPage() {
                                         </Button>
                                     </div>
                                 </div>
-                                <h3 className="font-semibold text-lg mb-2">{batch.name}</h3>
+                                <Link href={`/batches/${batch.id}`} className="block">
+                                    <h3 className="font-semibold text-lg mb-2 hover:text-primary transition-colors">{batch.name}</h3>
+                                </Link>
                                 <div className="text-sm text-muted-foreground space-y-1">
                                     <p>Start: {batch.startDate ? new Date(batch.startDate).toLocaleDateString() : '-'}</p>
                                     <p>End: {batch.endDate ? new Date(batch.endDate).toLocaleDateString() : '-'}</p>
