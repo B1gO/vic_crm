@@ -95,6 +95,15 @@ Server runs on http://localhost:8080
 - [x] `PUT /api/interview-experiences/{id}` - Update experience
 - [x] `DELETE /api/interview-experiences/{id}` - Delete experience
 
+### Mocks (Mock Interviews)
+- [x] `GET /api/mocks` - List all mocks
+- [x] `GET /api/mocks/{id}` - Get mock by ID
+- [x] `GET /api/mocks/candidate/{id}` - Get mocks by candidate
+- [x] `GET /api/mocks/evaluator/{id}` - Get mocks by evaluator
+- [x] `POST /api/mocks` - Create mock
+- [x] `PUT /api/mocks/{id}` - Update mock (add score/feedback)
+- [x] `DELETE /api/mocks/{id}` - Delete mock
+
 ---
 
 ## Lifecycle Stages

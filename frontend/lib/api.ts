@@ -1,10 +1,10 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, TimelineEvent, LifecycleStage, Vendor, Client, Submission, InterviewExperience, VendorContact } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, LifecycleStage, Vendor, Client, Submission, InterviewExperience, VendorContact, Mock } from '@/types';
 
 // Re-export types for convenience
-export type { User, Batch, Candidate, TimelineEvent, LifecycleStage, WorkAuth, UserRole, TimelineEventType, CloseReason, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact } from '@/types';
+export type { User, Batch, Candidate, TimelineEvent, LifecycleStage, WorkAuth, UserRole, TimelineEventType, CloseReason, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -98,3 +98,13 @@ export const interviewsApi = {
     delete: (id: number) => fetch(`${API_BASE_URL}/api/interviews/${id}`, { method: 'DELETE' }),
 };
 
+// Mocks API
+export const mocksApi = {
+    getAll: () => fetchApi<Mock[]>('/api/mocks'),
+    getById: (id: number) => fetchApi<Mock>(`/api/mocks/${id}`),
+    getByCandidate: (candidateId: number) => fetchApi<Mock[]>(`/api/mocks/candidate/${candidateId}`),
+    getByEvaluator: (evaluatorId: number) => fetchApi<Mock[]>(`/api/mocks/evaluator/${evaluatorId}`),
+    create: (data: Partial<Mock>) => fetchApi<Mock>('/api/mocks', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: number, data: Partial<Mock>) => fetchApi<Mock>(`/api/mocks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) => fetch(`${API_BASE_URL}/api/mocks/${id}`, { method: 'DELETE' }),
+};

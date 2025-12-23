@@ -154,3 +154,12 @@ export interface TimelineEvent {
 // Legacy alias for backwards compatibility
 export type StageTransition = TimelineEvent;
 
+export interface Mock {
+    id: number;
+    candidate: Candidate;
+    evaluator: User;
+    score: number | null;
+    feedback: string | null;
+    scheduledAt: string | null;
+    createdAt: string;
+}

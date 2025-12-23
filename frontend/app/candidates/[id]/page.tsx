@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, submissionsApi, vendorsApi, clientsApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth, Submission, Vendor, Client } from '@/lib/api';
+import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth, Submission, Vendor, Client, User, Mock } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
-import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X, Plus, Building2, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X, Plus, Building2, Send, Star, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -53,8 +53,13 @@ export default function CandidateDetailPage() {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'workspace' | 'profile' | 'submissions'>('workspace');
+    const [activeTab, setActiveTab] = useState<'workspace' | 'profile' | 'submissions' | 'mocks'>('workspace');
     const [transitioning, setTransitioning] = useState(false);
+    const [mocks, setMocks] = useState<Mock[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [showMockForm, setShowMockForm] = useState(false);
+    const [mockFormData, setMockFormData] = useState({ evaluatorId: '', scheduledAt: '', score: '', feedback: '' });
+    const [editingMockId, setEditingMockId] = useState<number | null>(null);
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [submitFormData, setSubmitFormData] = useState({
         vendorId: '',
@@ -73,13 +78,17 @@ export default function CandidateDetailPage() {
                 submissionsApi.getByCandidate(id),
                 vendorsApi.getAll(),
                 clientsApi.getAll(),
+                mocksApi.getByCandidate(id),
+                usersApi.getAll(),
             ])
-                .then(([c, t, s, v, cl]) => {
+                .then(([c, t, s, v, cl, m, u]) => {
                     setCandidate(c);
                     setTimeline(t);
                     setSubmissions(s);
                     setVendors(v);
                     setClients(cl);
+                    setMocks(m);
+                    setUsers(u);
                 })
                 .catch(console.error)
                 .finally(() => setLoading(false));
@@ -226,6 +235,17 @@ export default function CandidateDetailPage() {
                     )}
                 >
                     Candidate Profile
+                </button>
+                <button
+                    onClick={() => setActiveTab('mocks')}
+                    className={cn(
+                        "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                        activeTab === 'mocks'
+                            ? "border-primary text-primary"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                >
+                    Mocks {mocks.length > 0 && `(${mocks.length})`}
                 </button>
             </div>
 
@@ -481,7 +501,7 @@ export default function CandidateDetailPage() {
                         </Card>
                     )}
                 </div>
-            ) : (
+            ) : activeTab === 'profile' ? (
                 /* Profile Tab */
                 <div className="grid gap-6 md:grid-cols-2">
                     <Card>
@@ -581,7 +601,183 @@ export default function CandidateDetailPage() {
                         </Card>
                     )}
                 </div>
-            )}
+            ) : activeTab === 'mocks' ? (
+                <div className="space-y-6">
+                    {/* Assign Mock Form */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="flex items-center gap-2">
+                                <Star className="w-5 h-5" />
+                                Mock Interviews
+                            </CardTitle>
+                            <Button onClick={() => { setShowMockForm(!showMockForm); setEditingMockId(null); setMockFormData({ evaluatorId: '', scheduledAt: '', score: '', feedback: '' }); }}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Assign Mock
+                            </Button>
+                        </CardHeader>
+                        {showMockForm && (
+                            <CardContent>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    if (!candidate) return;
+                                    try {
+                                        const scheduledAtValue = mockFormData.scheduledAt
+                                            ? new Date(mockFormData.scheduledAt).toISOString()
+                                            : null;
+                                        const payload = {
+                                            candidate: { id: candidate.id },
+                                            evaluator: { id: Number(mockFormData.evaluatorId) },
+                                            scheduledAt: scheduledAtValue,
+                                            score: mockFormData.score ? Number(mockFormData.score) : null,
+                                            feedback: mockFormData.feedback || null,
+                                        };
+                                        if (editingMockId) {
+                                            await mocksApi.update(editingMockId, payload as Partial<Mock>);
+                                        } else {
+                                            await mocksApi.create(payload as Partial<Mock>);
+                                        }
+                                        setShowMockForm(false);
+                                        setMockFormData({ evaluatorId: '', scheduledAt: '', score: '', feedback: '' });
+                                        setEditingMockId(null);
+                                        const updatedMocks = await mocksApi.getByCandidate(id);
+                                        setMocks(updatedMocks);
+                                    } catch (err) {
+                                        console.error('Failed to save mock:', err);
+                                    }
+                                }} className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Evaluator *</label>
+                                            <select
+                                                required
+                                                value={mockFormData.evaluatorId}
+                                                onChange={e => setMockFormData({ ...mockFormData, evaluatorId: e.target.value })}
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                            >
+                                                <option value="">Select evaluator...</option>
+                                                {users.filter(u => u.role === 'TRAINER' || u.role === 'SUPPORTER').map(u => (
+                                                    <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Scheduled At</label>
+                                            <input
+                                                type="datetime-local"
+                                                value={mockFormData.scheduledAt}
+                                                onChange={e => setMockFormData({ ...mockFormData, scheduledAt: e.target.value })}
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                            />
+                                        </div>
+                                    </div>
+                                    {editingMockId && (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-sm font-medium mb-1 block">Score (0-100)</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    value={mockFormData.score}
+                                                    onChange={e => setMockFormData({ ...mockFormData, score: e.target.value })}
+                                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                                    placeholder="75"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                    {editingMockId && (
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Feedback</label>
+                                            <textarea
+                                                value={mockFormData.feedback}
+                                                onChange={e => setMockFormData({ ...mockFormData, feedback: e.target.value })}
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                                rows={3}
+                                                placeholder="Feedback for the candidate..."
+                                            />
+                                        </div>
+                                    )}
+                                    <div className="flex gap-2">
+                                        <Button type="submit">{editingMockId ? 'Update' : 'Assign'}</Button>
+                                        <Button type="button" variant="outline" onClick={() => { setShowMockForm(false); setEditingMockId(null); }}>Cancel</Button>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        )}
+                    </Card>
+
+                    {/* Mocks List */}
+                    {mocks.length === 0 ? (
+                        <Card>
+                            <CardContent className="py-10 text-center text-muted-foreground">
+                                No mock interviews yet. Assign one above!
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="space-y-4">
+                            {mocks.map(mock => (
+                                <Card key={mock.id}>
+                                    <CardContent className="pt-6">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-primary flex items-center justify-center text-white font-medium">
+                                                    {mock.evaluator?.name?.charAt(0) || '?'}
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium">{mock.evaluator?.name || 'Unknown'}</p>
+                                                    <p className="text-xs text-muted-foreground">{mock.evaluator?.role}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                {mock.score !== null && (
+                                                    <div className={cn(
+                                                        "px-3 py-1 rounded-full text-sm font-semibold",
+                                                        mock.score >= 80 ? "bg-emerald-500/10 text-emerald-600" :
+                                                            mock.score >= 60 ? "bg-yellow-500/10 text-yellow-600" :
+                                                                "bg-red-500/10 text-red-600"
+                                                    )}>
+                                                        {mock.score}/100
+                                                    </div>
+                                                )}
+                                                <Button variant="ghost" size="sm" onClick={() => {
+                                                    setEditingMockId(mock.id);
+                                                    setMockFormData({
+                                                        evaluatorId: mock.evaluator?.id?.toString() || '',
+                                                        scheduledAt: mock.scheduledAt ? mock.scheduledAt.slice(0, 16) : '',
+                                                        score: mock.score?.toString() || '',
+                                                        feedback: mock.feedback || ''
+                                                    });
+                                                    setShowMockForm(true);
+                                                }}>
+                                                    Add Feedback
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 space-y-2">
+                                            {mock.scheduledAt && (
+                                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                    <Clock className="w-4 h-4" />
+                                                    Scheduled: {new Date(mock.scheduledAt).toLocaleString()}
+                                                </p>
+                                            )}
+                                            {mock.feedback && (
+                                                <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                                                        <MessageSquare className="w-3 h-3" />
+                                                        Feedback
+                                                    </p>
+                                                    <p className="text-sm">{mock.feedback}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ) : null}
         </div>
     );
 }
