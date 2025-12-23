@@ -32,6 +32,13 @@ Server runs on http://localhost:8080
 - Username: `sa`
 - Password: (empty)
 
+### Seed Sample Data
+After starting the backend, run this to populate sample data:
+```bash
+./scripts/seed-data.sh
+```
+This creates: 4 users, 2 batches, 5 clients, 3 vendors, 4 candidates.
+
 ---
 
 ## Tech Stack
