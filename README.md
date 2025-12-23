@@ -153,6 +153,33 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 - **Submission Flow**: Track candidate submissions to client positions
 
 ### Submissions
+
+#### Submission Flow
+
+```mermaid
+flowchart TD
+    A[Submit to Vendor] --> B{Vendor Screening}
+    B -->|OA| C[Online Assessment]
+    B -->|Interview| D[Vendor Interview]
+    B -->|Direct| E[Skip Screening]
+    C --> F{Pass?}
+    D --> F
+    E --> G
+    F -->|Yes| G[Submit to Position]
+    F -->|No| H[Rejected]
+    
+    G --> I["Position: Java Developer"]
+    G --> J["Position: React Developer"]
+    
+    I --> K["Round 1, 2, 3... (flexible)"]
+    J --> L["Round 1, 2... (flexible)"]
+    
+    K --> M{Outcome}
+    L --> M
+    M -->|Offer| N[Placed]
+    M -->|Rejected| O[Continue Marketing]
+```
+
 - **Candidate Submissions**: Submit candidates to vendors with position, client, and contact
 - **Status Tracking**: VENDOR_SCREENING → CLIENT_ROUND → OFFERED/PLACED/REJECTED
 - **Round Tracking**: Track interview round progression
