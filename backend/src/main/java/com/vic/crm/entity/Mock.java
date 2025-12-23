@@ -1,5 +1,6 @@
 package com.vic.crm.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -24,10 +25,12 @@ public class Mock {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "candidate_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "batch", "recruiter" })
     private Candidate candidate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evaluator_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private User evaluator;
 
     @Min(0)

@@ -621,6 +621,10 @@ export default function CandidateDetailPage() {
                                     e.preventDefault();
                                     if (!candidate) return;
                                     try {
+                                        if (!mockFormData.evaluatorId) {
+                                            alert('Please select an evaluator');
+                                            return;
+                                        }
                                         const scheduledAtValue = mockFormData.scheduledAt
                                             ? new Date(mockFormData.scheduledAt).toISOString()
                                             : null;
