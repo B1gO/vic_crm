@@ -1,10 +1,10 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, TimelineEvent, LifecycleStage, Vendor, Client, Submission, InterviewExperience } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, LifecycleStage, Vendor, Client, Submission, InterviewExperience, VendorContact } from '@/types';
 
 // Re-export types for convenience
-export type { User, Batch, Candidate, TimelineEvent, LifecycleStage, WorkAuth, UserRole, TimelineEventType, CloseReason, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType } from '@/types';
+export type { User, Batch, Candidate, TimelineEvent, LifecycleStage, WorkAuth, UserRole, TimelineEventType, CloseReason, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 

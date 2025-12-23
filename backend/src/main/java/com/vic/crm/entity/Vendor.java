@@ -9,7 +9,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -39,10 +41,11 @@ public class Vendor {
     @Builder.Default
     private Set<Client> clients = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "vendor_recruiters", joinColumns = @JoinColumn(name = "vendor_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
+    // Vendor's contacts with full details
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "vendor_contacts", joinColumns = @JoinColumn(name = "vendor_id"))
     @Builder.Default
-    private Set<User> recruiters = new HashSet<>();
+    private List<VendorContact> contacts = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;

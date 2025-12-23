@@ -36,9 +36,8 @@ public class Submission {
     @JoinColumn(name = "client_id")
     private Client client;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "submitted_by")
-    private User submittedBy;
+    // Vendor contact name who submitted (simple string, not User reference)
+    private String vendorContact;
 
     @Column(nullable = false)
     private String positionTitle;

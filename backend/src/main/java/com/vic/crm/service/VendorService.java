@@ -33,6 +33,12 @@ public class VendorService {
         existing.setEmail(vendor.getEmail());
         existing.setPhone(vendor.getPhone());
         existing.setNotes(vendor.getNotes());
+        if (vendor.getClients() != null) {
+            existing.setClients(vendor.getClients());
+        }
+        if (vendor.getContacts() != null) {
+            existing.setContacts(vendor.getContacts());
+        }
         return vendorRepository.save(existing);
     }
 

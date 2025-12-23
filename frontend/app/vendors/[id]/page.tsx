@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { vendorsApi, submissionsApi, Vendor, Submission, User } from '@/lib/api';
+import { vendorsApi, submissionsApi, Vendor, Submission } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Building2, Mail, Phone, Users, TrendingUp, CheckCircle, XCircle, Clock, Building, UserCircle } from 'lucide-react';
@@ -24,8 +24,8 @@ const statusLabels: Record<string, string> = {
     REJECTED: 'Rejected',
 };
 
-interface RecruiterStats {
-    recruiter: User;
+interface ContactStats {
+    contact: string;
     total: number;
     placed: number;
     offered: number;
@@ -41,7 +41,7 @@ export default function VendorDetailPage() {
     const [vendor, setVendor] = useState<Vendor | null>(null);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedRecruiter, setSelectedRecruiter] = useState<number | null>(null);
+    const [selectedContact, setSelectedContact] = useState<string | null>(null);
 
     useEffect(() => {
         if (vendorId) {
@@ -83,8 +83,8 @@ export default function VendorDetailPage() {
     }
 
     // Calculate overall metrics
-    const filteredSubmissions = selectedRecruiter
-        ? submissions.filter(s => s.submittedBy?.id === selectedRecruiter)
+    const filteredSubmissions = selectedContact
+        ? submissions.filter(s => s.vendorContact === selectedContact)
         : submissions;
 
     const totalSubmissions = filteredSubmissions.length;
@@ -94,14 +94,14 @@ export default function VendorDetailPage() {
     const inProgressCount = filteredSubmissions.filter(s => ['VENDOR_SCREENING', 'CLIENT_ROUND'].includes(s.status)).length;
     const successRate = totalSubmissions > 0 ? Math.round(((placedCount + offeredCount) / totalSubmissions) * 100) : 0;
 
-    // Calculate per-recruiter stats
-    const recruiterStatsMap = new Map<number, RecruiterStats>();
+    // Calculate per-contact stats
+    const contactStatsMap = new Map<string, ContactStats>();
     submissions.forEach(sub => {
-        if (sub.submittedBy) {
-            const id = sub.submittedBy.id;
-            if (!recruiterStatsMap.has(id)) {
-                recruiterStatsMap.set(id, {
-                    recruiter: sub.submittedBy,
+        if (sub.vendorContact) {
+            const contact = sub.vendorContact;
+            if (!contactStatsMap.has(contact)) {
+                contactStatsMap.set(contact, {
+                    contact,
                     total: 0,
                     placed: 0,
                     offered: 0,
@@ -110,7 +110,7 @@ export default function VendorDetailPage() {
                     successRate: 0
                 });
             }
-            const stats = recruiterStatsMap.get(id)!;
+            const stats = contactStatsMap.get(contact)!;
             stats.total++;
             if (sub.status === 'PLACED') stats.placed++;
             if (sub.status === 'OFFERED') stats.offered++;
@@ -119,10 +119,10 @@ export default function VendorDetailPage() {
         }
     });
     // Calculate success rates
-    recruiterStatsMap.forEach(stats => {
+    contactStatsMap.forEach(stats => {
         stats.successRate = stats.total > 0 ? Math.round(((stats.placed + stats.offered) / stats.total) * 100) : 0;
     });
-    const recruiterStats = Array.from(recruiterStatsMap.values()).sort((a, b) => b.total - a.total);
+    const contactStats = Array.from(contactStatsMap.values()).sort((a, b) => b.total - a.total);
 
     return (
         <div className="space-y-6">
@@ -166,16 +166,16 @@ export default function VendorDetailPage() {
                                 <span className="text-sm">{vendor.phone}</span>
                             </div>
                         )}
-                        {vendor.recruiters && vendor.recruiters.length > 0 && (
+                        {vendor.contacts && vendor.contacts.length > 0 && (
                             <div className="pt-3 border-t border-border">
                                 <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
                                     <UserCircle className="w-3 h-3" />
-                                    Recruiters
+                                    Contacts
                                 </p>
                                 <div className="flex flex-wrap gap-1">
-                                    {vendor.recruiters.map(recruiter => (
-                                        <span key={recruiter.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-600">
-                                            {recruiter.name}
+                                    {vendor.contacts.map((contact, idx) => (
+                                        <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-600">
+                                            {contact.name}
                                         </span>
                                     ))}
                                 </div>
@@ -249,13 +249,13 @@ export default function VendorDetailPage() {
                 </Card>
             </div>
 
-            {/* Recruiter Performance Breakdown */}
-            {recruiterStats.length > 0 && (
+            {/* Contact Performance Breakdown */}
+            {contactStats.length > 0 && (
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <UserCircle className="w-5 h-5" />
-                            Performance by Recruiter
+                            Performance by Contact
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -263,7 +263,7 @@ export default function VendorDetailPage() {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-border">
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Recruiter</th>
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Contact</th>
                                         <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Total</th>
                                         <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">In Progress</th>
                                         <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Offered</th>
@@ -274,12 +274,12 @@ export default function VendorDetailPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {recruiterStats.map(stats => (
-                                        <tr key={stats.recruiter.id} className={`border-b border-border hover:bg-muted/50 ${selectedRecruiter === stats.recruiter.id ? 'bg-primary/5' : ''}`}>
+                                    {contactStats.map(stats => (
+                                        <tr key={stats.contact} className={`border-b border-border hover:bg-muted/50 ${selectedContact === stats.contact ? 'bg-primary/5' : ''}`}>
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-2">
                                                     <UserCircle className="w-4 h-4 text-purple-500" />
-                                                    <span className="font-medium">{stats.recruiter.name}</span>
+                                                    <span className="font-medium">{stats.contact}</span>
                                                 </div>
                                             </td>
                                             <td className="py-3 px-4 text-center font-semibold">{stats.total}</td>
@@ -310,11 +310,11 @@ export default function VendorDetailPage() {
                                             </td>
                                             <td className="py-3 px-4 text-center">
                                                 <Button
-                                                    variant={selectedRecruiter === stats.recruiter.id ? "default" : "outline"}
+                                                    variant={selectedContact === stats.contact ? "default" : "outline"}
                                                     size="sm"
-                                                    onClick={() => setSelectedRecruiter(selectedRecruiter === stats.recruiter.id ? null : stats.recruiter.id)}
+                                                    onClick={() => setSelectedContact(selectedContact === stats.contact ? null : stats.contact)}
                                                 >
-                                                    {selectedRecruiter === stats.recruiter.id ? 'Clear' : 'View'}
+                                                    {selectedContact === stats.contact ? 'Clear' : 'View'}
                                                 </Button>
                                             </td>
                                         </tr>
@@ -371,9 +371,9 @@ export default function VendorDetailPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <span>Submission History</span>
-                        {selectedRecruiter && (
+                        {selectedContact && (
                             <span className="text-sm font-normal text-muted-foreground">
-                                Filtered by: {recruiterStats.find(r => r.recruiter.id === selectedRecruiter)?.recruiter.name}
+                                Filtered by: {selectedContact}
                             </span>
                         )}
                     </CardTitle>
@@ -389,7 +389,7 @@ export default function VendorDetailPage() {
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Candidate</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Position</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Client</th>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Recruiter</th>
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Contact</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Round</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Submitted</th>
@@ -406,10 +406,10 @@ export default function VendorDetailPage() {
                                             <td className="py-3 px-4 text-sm">{sub.positionTitle}</td>
                                             <td className="py-3 px-4 text-sm">{sub.client?.companyName || '-'}</td>
                                             <td className="py-3 px-4 text-sm">
-                                                {sub.submittedBy ? (
+                                                {sub.vendorContact ? (
                                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-600">
                                                         <UserCircle className="w-3 h-3" />
-                                                        {sub.submittedBy.name}
+                                                        {sub.vendorContact}
                                                     </span>
                                                 ) : '-'}
                                             </td>

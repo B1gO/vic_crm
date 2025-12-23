@@ -2,18 +2,30 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { vendorsApi, clientsApi, usersApi, Vendor, Client, User } from '@/lib/api';
+import { vendorsApi, clientsApi, Vendor, Client, VendorContact } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Building2, Trash2, Edit, Mail, Phone, Building, UserCircle } from 'lucide-react';
+import { Plus, Building2, Trash2, Edit, Mail, Phone, Building, UserCircle, X, Linkedin } from 'lucide-react';
+
+interface ContactFormData {
+    name: string;
+    email: string;
+    phone: string;
+    linkedinUrl: string;
+    notes: string;
+}
+
+const emptyContact: ContactFormData = { name: '', email: '', phone: '', linkedinUrl: '', notes: '' };
 
 export default function VendorsPage() {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<number | null>(null);
+    const [showContactForm, setShowContactForm] = useState(false);
+    const [editingContactIdx, setEditingContactIdx] = useState<number | null>(null);
+    const [contactFormData, setContactFormData] = useState<ContactFormData>(emptyContact);
     const [formData, setFormData] = useState({
         companyName: '',
         contactName: '',
@@ -21,7 +33,7 @@ export default function VendorsPage() {
         phone: '',
         notes: '',
         clientIds: [] as number[],
-        recruiterIds: [] as number[]
+        contacts: [] as VendorContact[]
     });
 
     useEffect(() => {
@@ -30,14 +42,12 @@ export default function VendorsPage() {
 
     const loadData = async () => {
         try {
-            const [vendorsData, clientsData, usersData] = await Promise.all([
+            const [vendorsData, clientsData] = await Promise.all([
                 vendorsApi.getAll(),
-                clientsApi.getAll(),
-                usersApi.getAll()
+                clientsApi.getAll()
             ]);
             setVendors(vendorsData);
             setClients(clientsData);
-            setUsers(usersData);
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -55,7 +65,7 @@ export default function VendorsPage() {
                 phone: formData.phone,
                 notes: formData.notes,
                 clients: formData.clientIds.map(id => ({ id })),
-                recruiters: formData.recruiterIds.map(id => ({ id }))
+                contacts: formData.contacts
             };
             if (editingId) {
                 await vendorsApi.update(editingId, payload as unknown as Partial<Vendor>);
@@ -70,9 +80,12 @@ export default function VendorsPage() {
     };
 
     const resetForm = () => {
-        setFormData({ companyName: '', contactName: '', email: '', phone: '', notes: '', clientIds: [], recruiterIds: [] });
+        setFormData({ companyName: '', contactName: '', email: '', phone: '', notes: '', clientIds: [], contacts: [] });
         setShowForm(false);
         setEditingId(null);
+        setShowContactForm(false);
+        setEditingContactIdx(null);
+        setContactFormData(emptyContact);
     };
 
     const handleEdit = (vendor: Vendor) => {
@@ -83,7 +96,7 @@ export default function VendorsPage() {
             phone: vendor.phone || '',
             notes: vendor.notes || '',
             clientIds: vendor.clients?.map(c => c.id) || [],
-            recruiterIds: vendor.recruiters?.map(r => r.id) || []
+            contacts: vendor.contacts || []
         });
         setEditingId(vendor.id);
         setShowForm(true);
@@ -108,12 +121,54 @@ export default function VendorsPage() {
         }));
     };
 
-    const toggleRecruiter = (userId: number) => {
+    const openAddContact = () => {
+        setContactFormData(emptyContact);
+        setEditingContactIdx(null);
+        setShowContactForm(true);
+    };
+
+    const openEditContact = (idx: number) => {
+        const contact = formData.contacts[idx];
+        setContactFormData({
+            name: contact.name || '',
+            email: contact.email || '',
+            phone: contact.phone || '',
+            linkedinUrl: contact.linkedinUrl || '',
+            notes: contact.notes || ''
+        });
+        setEditingContactIdx(idx);
+        setShowContactForm(true);
+    };
+
+    const saveContact = () => {
+        if (!contactFormData.name.trim()) return;
+        const newContact: VendorContact = {
+            name: contactFormData.name.trim(),
+            email: contactFormData.email.trim() || null,
+            phone: contactFormData.phone.trim() || null,
+            linkedinUrl: contactFormData.linkedinUrl.trim() || null,
+            notes: contactFormData.notes.trim() || null
+        };
+        if (editingContactIdx !== null) {
+            setFormData(prev => ({
+                ...prev,
+                contacts: prev.contacts.map((c, i) => i === editingContactIdx ? newContact : c)
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                contacts: [...prev.contacts, newContact]
+            }));
+        }
+        setShowContactForm(false);
+        setContactFormData(emptyContact);
+        setEditingContactIdx(null);
+    };
+
+    const removeContact = (idx: number) => {
         setFormData(prev => ({
             ...prev,
-            recruiterIds: prev.recruiterIds.includes(userId)
-                ? prev.recruiterIds.filter(id => id !== userId)
-                : [...prev.recruiterIds, userId]
+            contacts: prev.contacts.filter((_, i) => i !== idx)
         }));
     };
 
@@ -157,7 +212,7 @@ export default function VendorsPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1 block">Contact Name</label>
+                                    <label className="text-sm font-medium mb-1 block">Primary Contact</label>
                                     <input
                                         type="text"
                                         value={formData.contactName}
@@ -187,29 +242,116 @@ export default function VendorsPage() {
                                     />
                                 </div>
                             </div>
+
+                            {/* Contacts Section */}
                             <div>
-                                <label className="text-sm font-medium mb-1 block">Recruiters</label>
-                                <div className="flex flex-wrap gap-2 p-3 border border-border rounded-lg bg-background min-h-[60px]">
-                                    {users.length === 0 ? (
-                                        <span className="text-sm text-muted-foreground">No users available</span>
-                                    ) : (
-                                        users.map(user => (
-                                            <button
-                                                key={user.id}
-                                                type="button"
-                                                onClick={() => toggleRecruiter(user.id)}
-                                                className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm transition-colors ${formData.recruiterIds.includes(user.id)
-                                                        ? 'bg-purple-500 text-white'
-                                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                                    }`}
-                                            >
-                                                <UserCircle className="w-3 h-3 mr-1" />
-                                                {user.name}
-                                            </button>
-                                        ))
-                                    )}
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="text-sm font-medium">Contacts</label>
+                                    <Button type="button" variant="outline" size="sm" onClick={openAddContact}>
+                                        <Plus className="w-3 h-3 mr-1" />
+                                        Add Contact
+                                    </Button>
                                 </div>
+                                {formData.contacts.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground py-3 text-center border border-dashed border-border rounded-lg">
+                                        No contacts added yet
+                                    </p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {formData.contacts.map((contact, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                                <div className="flex items-center gap-3">
+                                                    <UserCircle className="w-8 h-8 text-purple-500" />
+                                                    <div>
+                                                        <p className="font-medium">{contact.name}</p>
+                                                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                            {contact.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{contact.email}</span>}
+                                                            {contact.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{contact.phone}</span>}
+                                                            {contact.linkedinUrl && <span className="flex items-center gap-1"><Linkedin className="w-3 h-3" />LinkedIn</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-1">
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => openEditContact(idx)}>
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => removeContact(idx)}>
+                                                        <X className="w-4 h-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
+
+                            {/* Contact Form Modal */}
+                            {showContactForm && (
+                                <div className="p-4 border border-primary/50 rounded-lg bg-primary/5 space-y-3">
+                                    <h4 className="font-medium">{editingContactIdx !== null ? 'Edit Contact' : 'New Contact'}</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs font-medium mb-1 block">Name *</label>
+                                            <input
+                                                type="text"
+                                                value={contactFormData.name}
+                                                onChange={e => setContactFormData({ ...contactFormData, name: e.target.value })}
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm"
+                                                placeholder="Contact name"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-medium mb-1 block">Email</label>
+                                            <input
+                                                type="email"
+                                                value={contactFormData.email}
+                                                onChange={e => setContactFormData({ ...contactFormData, email: e.target.value })}
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm"
+                                                placeholder="contact@email.com"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-medium mb-1 block">Phone</label>
+                                            <input
+                                                type="tel"
+                                                value={contactFormData.phone}
+                                                onChange={e => setContactFormData({ ...contactFormData, phone: e.target.value })}
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm"
+                                                placeholder="(555) 123-4567"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-medium mb-1 block">LinkedIn URL</label>
+                                            <input
+                                                type="url"
+                                                value={contactFormData.linkedinUrl}
+                                                onChange={e => setContactFormData({ ...contactFormData, linkedinUrl: e.target.value })}
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm"
+                                                placeholder="https://linkedin.com/in/..."
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium mb-1 block">Notes</label>
+                                        <textarea
+                                            value={contactFormData.notes}
+                                            onChange={e => setContactFormData({ ...contactFormData, notes: e.target.value })}
+                                            className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm"
+                                            rows={2}
+                                            placeholder="Notes about this contact..."
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button type="button" size="sm" onClick={saveContact}>
+                                            {editingContactIdx !== null ? 'Update' : 'Add'} Contact
+                                        </Button>
+                                        <Button type="button" size="sm" variant="outline" onClick={() => setShowContactForm(false)}>
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
                             <div>
                                 <label className="text-sm font-medium mb-1 block">Associated Clients</label>
                                 <div className="flex flex-wrap gap-2 p-3 border border-border rounded-lg bg-background min-h-[60px]">
@@ -300,13 +442,13 @@ export default function VendorsPage() {
                                         </p>
                                     )}
                                 </div>
-                                {vendor.recruiters && vendor.recruiters.length > 0 && (
+                                {vendor.contacts && vendor.contacts.length > 0 && (
                                     <div className="mt-3 pt-3 border-t border-border">
-                                        <p className="text-xs text-muted-foreground mb-2">Recruiters:</p>
+                                        <p className="text-xs text-muted-foreground mb-2">Contacts ({vendor.contacts.length}):</p>
                                         <div className="flex flex-wrap gap-1">
-                                            {vendor.recruiters.map(recruiter => (
-                                                <span key={recruiter.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-600">
-                                                    {recruiter.name}
+                                            {vendor.contacts.map((contact, idx) => (
+                                                <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-500/10 text-purple-600">
+                                                    {contact.name}
                                                 </span>
                                             ))}
                                         </div>

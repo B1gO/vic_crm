@@ -52,6 +52,14 @@ export interface Batch {
     createdAt: string;
 }
 
+export interface VendorContact {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    linkedinUrl: string | null;
+    notes: string | null;
+}
+
 export interface Vendor {
     id: number;
     companyName: string;
@@ -60,7 +68,7 @@ export interface Vendor {
     phone: string | null;
     notes: string | null;
     clients: Client[];
-    recruiters: User[];
+    contacts: VendorContact[];
     createdAt: string;
     updatedAt: string;
 }
@@ -107,7 +115,7 @@ export interface Submission {
     candidate: Candidate;
     vendor: Vendor;
     client: Client | null;
-    submittedBy: User | null;
+    vendorContact: string | null;  // Vendor's contact name
     positionTitle: string;
     status: SubmissionStatus;
     screeningType: ScreeningType | null;

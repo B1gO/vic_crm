@@ -67,6 +67,34 @@ Server runs on http://localhost:8080
 - [x] `PUT /api/batches/{id}` - Update batch
 - [x] `DELETE /api/batches/{id}` - Delete batch
 
+### Vendors
+- [x] `GET /api/vendors` - List all vendors
+- [x] `GET /api/vendors/{id}` - Get vendor by ID
+- [x] `POST /api/vendors` - Create vendor (with contacts)
+- [x] `PUT /api/vendors/{id}` - Update vendor
+- [x] `DELETE /api/vendors/{id}` - Delete vendor
+
+### Clients
+- [x] `GET /api/clients` - List all clients
+- [x] `GET /api/clients/{id}` - Get client by ID
+- [x] `POST /api/clients` - Create client
+- [x] `PUT /api/clients/{id}` - Update client
+- [x] `DELETE /api/clients/{id}` - Delete client
+
+### Submissions
+- [x] `GET /api/submissions` - List all submissions
+- [x] `GET /api/submissions/candidate/{id}` - Get submissions by candidate
+- [x] `GET /api/submissions/vendor/{id}` - Get submissions by vendor
+- [x] `POST /api/submissions` - Create submission
+- [x] `PUT /api/submissions/{id}` - Update submission
+
+### Interview Experiences
+- [x] `GET /api/interview-experiences` - List all experiences
+- [x] `GET /api/interview-experiences/{id}` - Get experience by ID
+- [x] `POST /api/interview-experiences` - Create experience
+- [x] `PUT /api/interview-experiences/{id}` - Update experience
+- [x] `DELETE /api/interview-experiences/{id}` - Delete experience
+
 ---
 
 ## Lifecycle Stages
@@ -94,6 +122,7 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 - **Add Candidate Form**: Create candidates with recruiter and batch assignment
 - **Career Timeline**: Track all events from recruitment to placement
 - **Stage Transitions**: Move candidates through RECRUITMENT → TRAINING → MARKET_READY → PLACED
+- **Submissions Tab**: Submit candidates to vendors with client and contact selection
 
 ### Batch Management
 - **Batch Detail Page**: View batch info, stats, and assigned candidates
@@ -102,12 +131,20 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 
 ### Vendor Management
 - **Vendor List**: Track vendors with company name, contact, email, phone
-- **Vendor Detail**: View vendor performance and submission history
-- **Submission Tracking**: Track candidates submitted through each vendor
+- **Vendor Contacts**: Add multiple contacts per vendor with name, email, phone, LinkedIn, notes
+- **Vendor-Client Links**: Associate vendors with the clients they work with
+- **Vendor Detail Page**: View vendor performance metrics and submission history
+- **Performance by Contact**: Track individual contact success rates (placed, offered, rejected)
 
 ### Client Management
 - **Client List**: Track end clients with company name and industry
 - **Submission Flow**: Track candidate submissions to client positions
+
+### Submissions
+- **Candidate Submissions**: Submit candidates to vendors with position, client, and contact
+- **Status Tracking**: VENDOR_SCREENING → CLIENT_ROUND → OFFERED/PLACED/REJECTED
+- **Round Tracking**: Track interview round progression
+- **Contact Attribution**: Track which vendor contact handled each submission
 
 ### Interview Experience (面经)
 - **Tech Categories**: Filter by Java, React, Python, AWS, etc.
@@ -131,3 +168,27 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 | OUTCOME | Offer, placed |
 | CLOSED | Closed with reason |
 
+---
+
+## Data Models
+
+### VendorContact (Embeddable)
+| Field | Type | Description |
+|-------|------|-------------|
+| name | String | Contact name (required) |
+| email | String | Contact email |
+| phone | String | Contact phone |
+| linkedinUrl | String | LinkedIn profile URL |
+| notes | String | Notes about contact |
+
+### Submission
+| Field | Type | Description |
+|-------|------|-------------|
+| candidate | Candidate | The candidate being submitted |
+| vendor | Vendor | The vendor receiving submission |
+| client | Client | Target client (optional) |
+| vendorContact | String | Name of vendor contact |
+| positionTitle | String | Job position title |
+| status | Enum | VENDOR_SCREENING, CLIENT_ROUND, OFFERED, PLACED, REJECTED |
+| screeningType | Enum | OA, INTERVIEW, DIRECT |
+| currentRound | Integer | Interview round number |
