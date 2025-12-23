@@ -7,5 +7,6 @@ public enum Role {
     ADMIN,
     RECRUITER,
     TRAINER,
+    SUPPORTER,
     MANAGER
 }

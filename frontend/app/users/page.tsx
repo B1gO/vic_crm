@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { RoleBadge } from '@/components/ui/badge';
 import { Plus, Trash2, Edit, UserCircle } from 'lucide-react';
 
-type Role = 'ADMIN' | 'RECRUITER' | 'TRAINER' | 'MANAGER';
+type Role = 'ADMIN' | 'RECRUITER' | 'TRAINER' | 'SUPPORTER' | 'MANAGER';
 
 export default function UsersPage() {
     const [users, setUsers] = useState<User[]>([]);
@@ -111,6 +111,9 @@ export default function UsersPage() {
                                 >
                                     <option value="ADMIN">Admin</option>
                                     <option value="RECRUITER">Recruiter</option>
+                                    <option value="TRAINER">Trainer</option>
+                                    <option value="SUPPORTER">Supporter</option>
+                                    <option value="MANAGER">Manager</option>
                                 </select>
                             </div>
                             <Button type="submit">{editingId ? 'Update' : 'Create'}</Button>

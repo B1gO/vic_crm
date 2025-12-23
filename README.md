@@ -45,7 +45,7 @@ Server runs on http://localhost:8080
 ### Users (Recruiters & Admins)
 - [x] `GET /api/users` - List all users
 - [x] `GET /api/users/{id}` - Get user by ID
-- [x] `GET /api/users?role={role}` - Filter users by role (ADMIN, RECRUITER)
+- [x] `GET /api/users?role={role}` - Filter users by role (ADMIN, RECRUITER, TRAINER, SUPPORTER, MANAGER)
 - [x] `POST /api/users` - Create user
 - [x] `PUT /api/users/{id}` - Update user
 - [x] `DELETE /api/users/{id}` - Delete user
@@ -113,6 +113,18 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 | MARKET_READY | PLACED, ELIMINATED |
 | PLACED | (none) |
 | ELIMINATED | (none) |
+
+---
+
+## User Roles
+
+| Role | Description |
+|------|-------------|
+| ADMIN | System administrator |
+| RECRUITER | Candidate sourcing |
+| TRAINER | Class training, mock and support |
+| SUPPORTER | Candidate mock and support |
+| MANAGER | Management oversight |
 
 ---
 

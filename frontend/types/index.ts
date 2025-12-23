@@ -5,7 +5,7 @@
 // === Enums ===
 export type LifecycleStage = 'RECRUITMENT' | 'TRAINING' | 'MARKET_READY' | 'PLACED' | 'ELIMINATED';
 export type WorkAuth = 'CITIZEN' | 'GC' | 'OPT' | 'H1B' | 'CPT' | 'OTHER';
-export type UserRole = 'ADMIN' | 'RECRUITER' | 'TRAINER' | 'MANAGER';
+export type UserRole = 'ADMIN' | 'RECRUITER' | 'TRAINER' | 'SUPPORTER' | 'MANAGER';
 
 export type TimelineEventType =
     | 'STAGE_CHANGE'
