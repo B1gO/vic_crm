@@ -192,6 +192,98 @@ curl -s -X POST "$BASE_URL/api/candidates" \
 
 echo "   ✅ Created 4 candidates (Sara, Zack, vincent, mingkai)"
 
+# ============== MOCK CRITERIA ==============
+echo "📋 Creating Mock Criteria..."
+
+# Java - Screening
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"Screening","name":"Logistics & Fit","description":"Visa status, Notice period, Salary expectation, Location","displayOrder":1,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"Screening","name":"Communication","description":"English fluency, Clarity, Professionalism","displayOrder":2,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"Screening","name":"Resume Sanity Check","description":"Verify employment dates, Gap explanation, Role authenticity","displayOrder":3,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"Screening","name":"Java Basic Trivia","description":"Simple FizzBuzz level checks to filter complete fakes","displayOrder":4,"active":true}' > /dev/null
+
+# Java - TechMock
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"TechMock","name":"JVM Internals","description":"Memory Model (Heap/Stack), GC algorithms, Classloading","displayOrder":1,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"TechMock","name":"Concurrency Theory","description":"JMM, Volatile, Synchronized vs Locks, Thread Pools","displayOrder":2,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"TechMock","name":"Spring Ecosystem","description":"Bean lifecycle, AOP/IOC principles, Boot starter magic","displayOrder":3,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"TechMock","name":"Database Internals","description":"Index structures (B+Tree), Transaction Isolation, MVCC","displayOrder":4,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"TechMock","name":"Distributed Systems","description":"Redis usage, Message Queue patterns (Kafka/RabbitMQ)","displayOrder":5,"active":true}' > /dev/null
+
+# Java - RealMock
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"RealMock","name":"Live Coding (DSA)","description":"Algorithm correctness, Edge case handling, Complexity (Time/Space)","displayOrder":1,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"RealMock","name":"Engineering Quality","description":"Variable naming, Modularity, Clean Code principles","displayOrder":2,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"RealMock","name":"System Design","description":"Scalability, Trade-offs, Schema design, API definition","displayOrder":3,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"Java","stage":"RealMock","name":"Problem Solving","description":"Approach to ambiguity, Debugging thought process","displayOrder":4,"active":true}' > /dev/null
+
+# React - Screening
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"Screening","name":"Logistics & Fit","description":"Visa status, Notice period, Salary expectation","displayOrder":1,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"Screening","name":"Communication","description":"English fluency, Clarity, Professionalism","displayOrder":2,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"Screening","name":"Stack Match","description":"Exp with Next.js, TypeScript, Tailwind (vs Resume claims)","displayOrder":3,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"Screening","name":"JS Basic Trivia","description":"ES6+ features, Closures, simple DOM manipulation check","displayOrder":4,"active":true}' > /dev/null
+
+# React - TechMock
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"TechMock","name":"React Internals","description":"Virtual DOM, Fiber, Reconciliation, Synthetic Events","displayOrder":1,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"TechMock","name":"JS Core Theory","description":"Event Loop, Micro/Macro tasks, Prototype Chain, this binding","displayOrder":2,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"TechMock","name":"Browser Mechanism","description":"Critical Rendering Path, Repaint/Reflow, Caching, CORS","displayOrder":3,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"TechMock","name":"Performance Theory","description":"Memoization, Bundle splitting, Web Vitals, SSR/CSR","displayOrder":4,"active":true}' > /dev/null
+
+# React - RealMock
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"RealMock","name":"Component Coding","description":"Implementing a feature (Infinite Scroll, Form), Hooks usage","displayOrder":1,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"RealMock","name":"CSS & Layout","description":"Flexbox/Grid mastery, Responsive implementation, Pixel perfection","displayOrder":2,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"RealMock","name":"State Management","description":"Designing data flow, Avoiding prop drilling, Context/Redux","displayOrder":3,"active":true}' > /dev/null
+curl -s -X POST "$BASE_URL/api/mock-criteria" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"React","stage":"RealMock","name":"Testing & Debugging","description":"Unit tests (Jest/RTL), Debugging React errors","displayOrder":4,"active":true}' > /dev/null
+
+echo "   ✅ Created 26 mock criteria (Java + React × Screening/TechMock/RealMock)"
+
 echo ""
 echo "🎉 Database seeding complete!"
 echo ""
@@ -201,3 +293,4 @@ echo "  - 2 Batches (Java 202601, React 202601)"
 echo "  - 5 Clients (eBay, Walmart, Apple, Paypal, Intuit)"
 echo "  - 3 Vendors (Infobahn, bayone, inspyr)"
 echo "  - 4 Candidates (Sara, Zack, vincent, mingkai)"
+echo "  - 26 Mock Criteria (Java + React)"

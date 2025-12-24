@@ -158,8 +158,37 @@ export interface Mock {
     id: number;
     candidate: Candidate;
     evaluator: User;
+    role: string | null;        // "Java" or "React"
+    stage: string | null;       // "Screening", "TechMock", "RealMock"
     score: number | null;
-    feedback: string | null;
+    decision: string | null;    // "Strong Hire", "Hire", "Weak Hire", "No Hire"
+    strengths: string | null;
+    weaknesses: string | null;
+    actionItems: string | null;
+    summary: string | null;
+    feedback: string | null;    // Legacy field
+    completed: boolean;
     scheduledAt: string | null;
+    completedAt: string | null;
     createdAt: string;
+    criteriaRatings: MockCriteriaRating[];
+}
+
+export interface MockCriteria {
+    id: number;
+    role: string;               // "Java" or "React"
+    stage: string;              // "Screening", "TechMock", "RealMock"
+    name: string;
+    description: string | null;
+    displayOrder: number;
+    active: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface MockCriteriaRating {
+    id: number;
+    mockId: number;
+    criteria: MockCriteria;
+    score: number;              // 1-5
 }

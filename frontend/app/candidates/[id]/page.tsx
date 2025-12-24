@@ -744,34 +744,68 @@ export default function CandidateDetailPage() {
                                                         {mock.score}/100
                                                     </div>
                                                 )}
-                                                <Button variant="ghost" size="sm" onClick={() => {
-                                                    setEditingMockId(mock.id);
-                                                    setMockFormData({
-                                                        evaluatorId: mock.evaluator?.id?.toString() || '',
-                                                        scheduledAt: mock.scheduledAt ? mock.scheduledAt.slice(0, 16) : '',
-                                                        score: mock.score?.toString() || '',
-                                                        feedback: mock.feedback || ''
-                                                    });
-                                                    setShowMockForm(true);
-                                                }}>
-                                                    Add Feedback
-                                                </Button>
+                                                {mock.decision && (
+                                                    <div className={cn(
+                                                        "px-2 py-1 rounded text-xs font-bold border",
+                                                        mock.decision === 'Strong Hire' ? "bg-green-50 text-green-700 border-green-200" :
+                                                            mock.decision === 'Hire' ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                                                mock.decision === 'Weak Hire' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                                                                    mock.decision === 'No Hire' ? "bg-red-50 text-red-700 border-red-200" :
+                                                                        "bg-muted text-muted-foreground border-border"
+                                                    )}>
+                                                        {mock.decision}
+                                                    </div>
+                                                )}
+                                                <Link href={`/mock-feedback/${mock.id}`}>
+                                                    <Button variant="outline" size="sm">
+                                                        {mock.completed ? 'View/Edit' : 'Add Feedback'}
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         </div>
                                         <div className="mt-4 space-y-2">
+                                            {mock.stage && (
+                                                <span className={cn(
+                                                    "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mr-2",
+                                                    mock.stage === 'Screening' ? "bg-gray-100 text-gray-700" :
+                                                        mock.stage === 'TechMock' ? "bg-purple-100 text-purple-700" :
+                                                            "bg-blue-100 text-blue-700"
+                                                )}>
+                                                    {mock.stage === 'Screening' ? 'Screening (初筛)' :
+                                                        mock.stage === 'TechMock' ? 'Tech Theory (八股)' :
+                                                            'Interview Sim (实战)'}
+                                                </span>
+                                            )}
+                                            {mock.role && (
+                                                <span className={cn(
+                                                    "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold",
+                                                    mock.role === 'Java' ? "bg-orange-50 text-orange-700 border border-orange-100" :
+                                                        "bg-cyan-50 text-cyan-700 border border-cyan-100"
+                                                )}>
+                                                    {mock.role}
+                                                </span>
+                                            )}
                                             {mock.scheduledAt && (
                                                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                                                     <Clock className="w-4 h-4" />
                                                     Scheduled: {new Date(mock.scheduledAt).toLocaleString()}
                                                 </p>
                                             )}
-                                            {mock.feedback && (
+                                            {mock.summary && (
                                                 <div className="mt-3 p-3 bg-muted/50 rounded-lg">
                                                     <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
                                                         <MessageSquare className="w-3 h-3" />
-                                                        Feedback
+                                                        Summary
                                                     </p>
-                                                    <p className="text-sm">{mock.feedback}</p>
+                                                    <p className="text-sm">{mock.summary}</p>
+                                                </div>
+                                            )}
+                                            {mock.actionItems && (
+                                                <div className="mt-2 p-3 bg-indigo-50/50 rounded-lg border border-indigo-100/50">
+                                                    <p className="text-xs text-indigo-600 font-semibold flex items-center gap-1 mb-1">
+                                                        Action Items
+                                                    </p>
+                                                    <p className="text-sm text-slate-700">{mock.actionItems}</p>
                                                 </div>
                                             )}
                                         </div>
