@@ -34,7 +34,9 @@ export function CandidateTable({ candidates, emptyMessage = 'No candidates yet' 
                 <tr className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     <th className="p-4">Name</th>
                     <th className="p-4">Stage</th>
+                    <th className="p-4">WeChat</th>
                     <th className="p-4">Location</th>
+                    <th className="p-4">Education</th>
                     <th className="p-4">Visa</th>
                     <th className="p-4 w-16">Action</th>
                 </tr>
@@ -51,7 +53,20 @@ export function CandidateTable({ candidates, emptyMessage = 'No candidates yet' 
                             <StageBadge stage={candidate.lifecycleStage} />
                         </td>
                         <td className="p-4 text-muted-foreground">
-                            {[candidate.city, candidate.state].filter(Boolean).join(', ') || '-'}
+                            {candidate.wechatName || candidate.wechatId || '-'}
+                        </td>
+                        <td className="p-4 text-muted-foreground">
+                            <span>
+                                {[candidate.city, candidate.state].filter(Boolean).join(', ') || '-'}
+                            </span>
+                            {candidate.relocation && (
+                                <span className="ml-2 text-xs text-green-500" title="Open to relocation">✓ Relo</span>
+                            )}
+                        </td>
+                        <td className="p-4 text-muted-foreground text-sm">
+                            {candidate.school || candidate.major
+                                ? `${candidate.major || ''} ${candidate.school ? '@ ' + candidate.school : ''}`.trim()
+                                : '-'}
                         </td>
                         <td className="p-4">
                             {candidate.workAuth ? (
