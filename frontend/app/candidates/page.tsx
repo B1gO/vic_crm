@@ -329,7 +329,17 @@ export default function CandidatesPage() {
                                     </label>
                                 </div>
                             </div>
-                            {/* Row 5: Actions */}
+                            {/* Row 5: Notes */}
+                            <div>
+                                <label className="text-sm font-medium mb-1 block">Notes</label>
+                                <textarea
+                                    value={formData.notes}
+                                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background min-h-[80px]"
+                                    placeholder="e.g. 实力很强，可以 relocation 但 prefer 湾区"
+                                />
+                            </div>
+                            {/* Row 6: Actions */}
                             <div className="flex gap-2 pt-2">
                                 <Button type="submit">Create</Button>
                                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
