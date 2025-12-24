@@ -137,7 +137,8 @@ curl -s -X POST "$BASE_URL/api/candidates" \
     "major":"MS Computer Science",
     "relocation":true,
     "notes":"Strong background in distributed systems. Previous intern at Google.",
-    "lifecycleStage":"RECRUITMENT",
+    "lifecycleStage":"TRAINING",
+    "recruitmentStatus":"SCREENING_PASSED",
     "batch":{"id":1},
     "recruiter":{"id":1}
   }' > /dev/null
@@ -162,6 +163,7 @@ curl -s -X POST "$BASE_URL/api/candidates" \
     "relocation":false,
     "notes":"5 years experience in Java/Spring Boot. Looking for backend roles.",
     "lifecycleStage":"RECRUITMENT",
+    "recruitmentStatus":"SCREENING_SCHEDULED",
     "batch":{"id":1},
     "recruiter":{"id":1}
   }' > /dev/null
@@ -186,7 +188,7 @@ curl -s -X POST "$BASE_URL/api/candidates" \
     "relocation":true,
     "notes":"Frontend specialist. Strong React/TypeScript skills. Previous experience at Meta.",
     "lifecycleStage":"RECRUITMENT",
-    "batch":{"id":2},
+    "recruitmentStatus":"SOURCED",
     "recruiter":{"id":1}
   }' > /dev/null
 
@@ -209,12 +211,48 @@ curl -s -X POST "$BASE_URL/api/candidates" \
     "major":"MS Computer Engineering",
     "relocation":true,
     "notes":"Full-stack developer. Focused on React and Node.js.",
-    "lifecycleStage":"RECRUITMENT",
-    "batch":{"id":2},
+    "lifecycleStage":"MARKET_READY",
+    "recruitmentStatus":"DIRECT_MARKETING",
     "recruiter":{"id":4}
   }' > /dev/null
 
-echo "   ✅ Created 4 candidates (Sara, Zack, Vincent, Mingkai)"
+# Candidate 5: Emma - new sourced candidate, no batch yet
+curl -s -X POST "$BASE_URL/api/candidates" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"Emma",
+    "email":"emma@gmail.com",
+    "phone":"+1 (312) 555-0111",
+    "wechatName":"艾玛",
+    "workAuth":"H1B",
+    "city":"Chicago",
+    "state":"IL",
+    "school":"Northwestern",
+    "major":"MS Data Science",
+    "notes":"Just contacted via LinkedIn. Strong ML background.",
+    "lifecycleStage":"RECRUITMENT",
+    "recruitmentStatus":"SOURCED",
+    "recruiter":{"id":1}
+  }' > /dev/null
+
+# Candidate 6: Tom - screening failed
+curl -s -X POST "$BASE_URL/api/candidates" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"Tom",
+    "email":"tom@gmail.com",
+    "phone":"+1 (206) 555-0222",
+    "wechatName":"汤姆",
+    "workAuth":"OPT",
+    "city":"Seattle",
+    "state":"WA",
+    "notes":"Screening interview did not go well. Lacks communication skills.",
+    "lifecycleStage":"ELIMINATED",
+    "recruitmentStatus":"SCREENING_FAILED",
+    "recruiter":{"id":4}
+  }' > /dev/null
+
+echo "   ✅ Created 6 candidates (Sara, Zack, Vincent, Mingkai, Emma, Tom)"
 
 # ============== MOCK CRITERIA ==============
 echo "📋 Creating Mock Criteria..."

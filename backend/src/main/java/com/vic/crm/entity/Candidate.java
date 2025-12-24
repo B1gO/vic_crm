@@ -1,6 +1,7 @@
 package com.vic.crm.entity;
 
 import com.vic.crm.enums.LifecycleStage;
+import com.vic.crm.enums.RecruitmentStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,7 +53,11 @@ public class Candidate {
     @Column(nullable = false)
     private LifecycleStage lifecycleStage = LifecycleStage.RECRUITMENT;
 
-    // Relationships
+    // Recruitment Status (sourcing workflow before batch assignment)
+    @Enumerated(EnumType.STRING)
+    private RecruitmentStatus recruitmentStatus = RecruitmentStatus.SOURCED;
+
+    // Relationships (batch is optional - null until assigned after screening)
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "batch_id")
     private Batch batch;

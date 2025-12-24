@@ -33,6 +33,7 @@ export type CloseReason =
 
 export type SubmissionStatus = 'VENDOR_SCREENING' | 'CLIENT_ROUND' | 'OFFERED' | 'PLACED' | 'REJECTED';
 export type ScreeningType = 'OA' | 'INTERVIEW' | 'DIRECT';
+export type RecruitmentStatus = 'SOURCED' | 'SCREENING_SCHEDULED' | 'SCREENING_PASSED' | 'SCREENING_FAILED' | 'DIRECT_MARKETING';
 
 // === Entities ===
 export interface User {
@@ -102,6 +103,7 @@ export interface Candidate {
     major: string | null;
     // Workspace
     lifecycleStage: LifecycleStage;
+    recruitmentStatus: RecruitmentStatus;
     batch: Batch | null;
     recruiter: User | null;
     resumeReady: boolean;
