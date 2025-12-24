@@ -58,7 +58,7 @@ export default function CandidateDetailPage() {
     const [mocks, setMocks] = useState<Mock[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [showMockForm, setShowMockForm] = useState(false);
-    const [mockFormData, setMockFormData] = useState({ evaluatorId: '', scheduledAt: '', score: '', feedback: '' });
+    const [mockFormData, setMockFormData] = useState({ evaluatorId: '', scheduledAt: '', score: '', feedback: '', role: 'Java', stage: 'Screening' });
     const [editingMockId, setEditingMockId] = useState<number | null>(null);
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [submitFormData, setSubmitFormData] = useState({
@@ -610,7 +610,7 @@ export default function CandidateDetailPage() {
                                 <Star className="w-5 h-5" />
                                 Mock Interviews
                             </CardTitle>
-                            <Button onClick={() => { setShowMockForm(!showMockForm); setEditingMockId(null); setMockFormData({ evaluatorId: '', scheduledAt: '', score: '', feedback: '' }); }}>
+                            <Button onClick={() => { setShowMockForm(!showMockForm); setEditingMockId(null); setMockFormData({ evaluatorId: '', scheduledAt: '', score: '', feedback: '', role: 'Java', stage: 'Screening' }); }}>
                                 <Plus className="w-4 h-4 mr-2" />
                                 Assign Mock
                             </Button>
@@ -632,6 +632,8 @@ export default function CandidateDetailPage() {
                                             candidate: { id: candidate.id },
                                             evaluator: { id: Number(mockFormData.evaluatorId) },
                                             scheduledAt: scheduledAtValue,
+                                            role: mockFormData.role,
+                                            stage: mockFormData.stage,
                                             score: mockFormData.score ? Number(mockFormData.score) : null,
                                             feedback: mockFormData.feedback || null,
                                         };
@@ -641,7 +643,7 @@ export default function CandidateDetailPage() {
                                             await mocksApi.create(payload as Partial<Mock>);
                                         }
                                         setShowMockForm(false);
-                                        setMockFormData({ evaluatorId: '', scheduledAt: '', score: '', feedback: '' });
+                                        setMockFormData({ evaluatorId: '', scheduledAt: '', score: '', feedback: '', role: 'Java', stage: 'Screening' });
                                         setEditingMockId(null);
                                         const updatedMocks = await mocksApi.getByCandidate(id);
                                         setMocks(updatedMocks);
@@ -672,6 +674,39 @@ export default function CandidateDetailPage() {
                                                 onChange={e => setMockFormData({ ...mockFormData, scheduledAt: e.target.value })}
                                                 className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                                             />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Role (Tech Stack) *</label>
+                                            <div className="flex p-1 bg-muted rounded-lg">
+                                                {['Java', 'React'].map(role => (
+                                                    <button
+                                                        key={role}
+                                                        type="button"
+                                                        onClick={() => setMockFormData({ ...mockFormData, role })}
+                                                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${mockFormData.role === role
+                                                                ? 'bg-background text-primary shadow-sm'
+                                                                : 'text-muted-foreground hover:text-foreground'
+                                                            }`}
+                                                    >
+                                                        {role}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Interview Stage *</label>
+                                            <select
+                                                required
+                                                value={mockFormData.stage}
+                                                onChange={e => setMockFormData({ ...mockFormData, stage: e.target.value })}
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                            >
+                                                <option value="Screening">Screening (初筛)</option>
+                                                <option value="TechMock">Tech Theory (八股)</option>
+                                                <option value="RealMock">Interview Sim (实战)</option>
+                                            </select>
                                         </div>
                                     </div>
                                     {editingMockId && (
