@@ -140,6 +140,38 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 
 ---
 
+## Recruitment Status
+
+Tracks candidate progress through the sourcing/screening process before batch assignment.
+
+```
+SOURCED → SCREENING_SCHEDULED → SCREENING_PASSED → (assign to batch)
+                    ↓
+            SCREENING_FAILED
+
+DIRECT_MARKETING → (skip training, go directly to marketing)
+```
+
+### Status-Stage Relationship
+| Recruitment Status | Typical Lifecycle Stage | Batch Required? |
+|-------------------|------------------------|-----------------|
+| SOURCED | RECRUITMENT | ❌ No |
+| SCREENING_SCHEDULED | RECRUITMENT | ❌ No |
+| SCREENING_PASSED | TRAINING | ✅ Yes |
+| SCREENING_FAILED | ELIMINATED | ❌ No |
+| DIRECT_MARKETING | MARKET_READY | ❌ No |
+
+### Status Descriptions
+| Status | Description |
+|--------|-------------|
+| SOURCED | 刚录入，待联系 |
+| SCREENING_SCHEDULED | 已安排 Screening |
+| SCREENING_PASSED | Screening 通过，已分配 Batch |
+| SCREENING_FAILED | Screening 失败 |
+| DIRECT_MARKETING | 有经验，不需要培训，直接 Marketing |
+
+---
+
 ## User Roles
 
 | Role | Description |
