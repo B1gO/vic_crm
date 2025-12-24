@@ -111,6 +111,14 @@ This creates: 4 users, 2 batches, 5 clients, 3 vendors, 4 candidates.
 - [x] `PUT /api/mocks/{id}` - Update mock (add score/feedback)
 - [x] `DELETE /api/mocks/{id}` - Delete mock
 
+### Candidate Documents
+- [x] `GET /api/candidates/{id}/documents` - List candidate documents
+- [x] `POST /api/candidates/{id}/documents` - Upload document (multipart)
+- [x] `GET /api/candidates/{id}/documents/{docId}/download` - Download document
+- [x] `DELETE /api/candidates/{id}/documents/{docId}` - Delete document
+
+**Document Types**: RESUME, CONTRACT, DL (Driver License), OPT_EAD, GC (Green Card), PASSPORT
+
 ---
 
 ## Lifecycle Stages
@@ -151,6 +159,7 @@ RECRUITMENT → TRAINING → MARKET_READY → PLACED
 - **Career Timeline**: Track all events from recruitment to placement
 - **Stage Transitions**: Move candidates through RECRUITMENT → TRAINING → MARKET_READY → PLACED
 - **Submissions Tab**: Submit candidates to vendors with client and contact selection
+- **Documents Tab**: Upload, download, delete candidate documents (Resume, Contract, DL, OPT_EAD, GC, Passport)
 
 ### Batch Management
 - **Batch Detail Page**: View batch info, stats, and assigned candidates

@@ -193,3 +193,18 @@ export interface MockCriteriaRating {
     criteria: MockCriteria;
     score: number;              // 1-5
 }
+
+// === Document Types ===
+export type DocumentType = 'RESUME' | 'CONTRACT' | 'DL' | 'OPT_EAD' | 'GC' | 'PASSPORT';
+
+export interface CandidateDocument {
+    id: number;
+    candidateId: number;
+    documentType: DocumentType;
+    originalFileName: string;
+    fileSize: number;
+    mimeType: string;
+    storageType: string;
+    uploadedAt: string;
+    notes: string;
+}

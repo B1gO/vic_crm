@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth, Submission, Vendor, Client, User, Mock } from '@/lib/api';
+import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
-import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X, Plus, Building2, Send, Star, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X, Plus, Building2, Send, Star, MessageSquare, Upload, Download, Trash2, File } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -53,13 +53,16 @@ export default function CandidateDetailPage() {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'workspace' | 'profile' | 'submissions' | 'mocks'>('workspace');
+    const [activeTab, setActiveTab] = useState<'workspace' | 'profile' | 'submissions' | 'mocks' | 'documents'>('workspace');
     const [transitioning, setTransitioning] = useState(false);
     const [mocks, setMocks] = useState<Mock[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [showMockForm, setShowMockForm] = useState(false);
     const [mockFormData, setMockFormData] = useState({ evaluatorId: '', scheduledAt: '', score: '', feedback: '', role: 'Java', stage: 'Screening' });
     const [editingMockId, setEditingMockId] = useState<number | null>(null);
+    const [documents, setDocuments] = useState<CandidateDocument[]>([]);
+    const [showUploadModal, setShowUploadModal] = useState(false);
+    const [uploadForm, setUploadForm] = useState({ documentType: 'RESUME' as DocumentType, notes: '', file: null as File | null });
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [submitFormData, setSubmitFormData] = useState({
         vendorId: '',
@@ -80,8 +83,9 @@ export default function CandidateDetailPage() {
                 clientsApi.getAll(),
                 mocksApi.getByCandidate(id),
                 usersApi.getAll(),
+                documentsApi.getByCandidate(id),
             ])
-                .then(([c, t, s, v, cl, m, u]) => {
+                .then(([c, t, s, v, cl, m, u, d]) => {
                     setCandidate(c);
                     setTimeline(t);
                     setSubmissions(s);
@@ -89,6 +93,7 @@ export default function CandidateDetailPage() {
                     setClients(cl);
                     setMocks(m);
                     setUsers(u);
+                    setDocuments(d);
                 })
                 .catch(console.error)
                 .finally(() => setLoading(false));
@@ -246,6 +251,17 @@ export default function CandidateDetailPage() {
                     )}
                 >
                     Mocks {mocks.length > 0 && `(${mocks.length})`}
+                </button>
+                <button
+                    onClick={() => setActiveTab('documents')}
+                    className={cn(
+                        "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                        activeTab === 'documents'
+                            ? "border-primary text-primary"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                >
+                    Documents {documents.length > 0 && `(${documents.length})`}
                 </button>
             </div>
 
@@ -853,6 +869,117 @@ export default function CandidateDetailPage() {
                             ))}
                         </div>
                     )}
+                </div>
+            ) : activeTab === 'documents' ? (
+                <div className="space-y-4">
+                    {/* Upload Modal */}
+                    {showUploadModal && (
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-sm">Upload Document</CardTitle>
+                                <Button variant="ghost" size="sm" onClick={() => setShowUploadModal(false)}>
+                                    <X className="w-4 h-4" />
+                                </Button>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    if (!uploadForm.file) return;
+                                    try {
+                                        const newDoc = await documentsApi.upload(id, uploadForm.file, uploadForm.documentType, uploadForm.notes);
+                                        setDocuments([newDoc, ...documents]);
+                                        setShowUploadModal(false);
+                                        setUploadForm({ documentType: 'RESUME', notes: '', file: null });
+                                    } catch (error) {
+                                        console.error(error);
+                                    }
+                                }} className="space-y-4">
+                                    <div>
+                                        <label className="text-sm font-medium mb-1 block">Document Type</label>
+                                        <select
+                                            value={uploadForm.documentType}
+                                            onChange={e => setUploadForm({ ...uploadForm, documentType: e.target.value as DocumentType })}
+                                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        >
+                                            <option value="RESUME">Resume</option>
+                                            <option value="CONTRACT">Contract</option>
+                                            <option value="DL">Driver License</option>
+                                            <option value="OPT_EAD">OPT/EAD</option>
+                                            <option value="GC">Green Card</option>
+                                            <option value="PASSPORT">Passport</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium mb-1 block">File</label>
+                                        <input
+                                            type="file"
+                                            onChange={e => setUploadForm({ ...uploadForm, file: e.target.files?.[0] || null })}
+                                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium mb-1 block">Notes (optional)</label>
+                                        <input
+                                            type="text"
+                                            value={uploadForm.notes}
+                                            onChange={e => setUploadForm({ ...uploadForm, notes: e.target.value })}
+                                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                            placeholder="e.g. Latest version for submission"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button type="submit" disabled={!uploadForm.file}>
+                                            <Upload className="w-4 h-4 mr-2" />
+                                            Upload
+                                        </Button>
+                                        <Button type="button" variant="outline" onClick={() => setShowUploadModal(false)}>Cancel</Button>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Documents List */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm">📄 Documents</CardTitle>
+                            <Button size="sm" onClick={() => setShowUploadModal(true)}>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Upload
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {documents.length === 0 ? (
+                                <p className="text-muted-foreground text-sm text-center py-8">No documents uploaded yet</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {documents.map(doc => (
+                                        <div key={doc.id} className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg">
+                                            <div className="flex items-center gap-3">
+                                                <File className="w-4 h-4 text-muted-foreground" />
+                                                <div>
+                                                    <p className="text-sm font-medium">{doc.originalFileName}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {doc.documentType.replace('_', ' ')} • {(doc.fileSize / 1024).toFixed(1)}KB • {new Date(doc.uploadedAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <a href={documentsApi.download(id, doc.id)} target="_blank" rel="noopener noreferrer">
+                                                    <Button variant="ghost" size="sm"><Download className="w-4 h-4" /></Button>
+                                                </a>
+                                                <Button variant="ghost" size="sm" onClick={async () => {
+                                                    await documentsApi.delete(id, doc.id);
+                                                    setDocuments(documents.filter(d => d.id !== doc.id));
+                                                }}><Trash2 className="w-4 h-4 text-red-500" /></Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             ) : null}
         </div>

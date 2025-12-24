@@ -1,10 +1,10 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, TimelineEvent, LifecycleStage, Vendor, Client, Submission, InterviewExperience, VendorContact, Mock, MockCriteria } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, LifecycleStage, Vendor, Client, Submission, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType } from '@/types';
 
 // Re-export types for convenience
-export type { User, Batch, Candidate, TimelineEvent, LifecycleStage, WorkAuth, UserRole, TimelineEventType, CloseReason, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating } from '@/types';
+export type { User, Batch, Candidate, TimelineEvent, LifecycleStage, WorkAuth, UserRole, TimelineEventType, CloseReason, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -117,4 +117,25 @@ export const mockCriteriaApi = {
     create: (data: Partial<MockCriteria>) => fetchApi<MockCriteria>('/api/mock-criteria', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<MockCriteria>) => fetchApi<MockCriteria>(`/api/mock-criteria/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => fetch(`${API_BASE_URL}/api/mock-criteria/${id}`, { method: 'DELETE' }),
+};
+
+// Documents API
+export const documentsApi = {
+    getByCandidate: (candidateId: number) => fetchApi<CandidateDocument[]>(`/api/candidates/${candidateId}/documents`),
+    upload: async (candidateId: number, file: File, documentType: DocumentType, notes?: string) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('documentType', documentType);
+        if (notes) formData.append('notes', notes);
+        const response = await fetch(`${API_BASE_URL}/api/candidates/${candidateId}/documents`, {
+            method: 'POST',
+            body: formData,
+        });
+        if (!response.ok) throw new Error('Upload failed');
+        return response.json() as Promise<CandidateDocument>;
+    },
+    download: (candidateId: number, documentId: number) =>
+        `${API_BASE_URL}/api/candidates/${candidateId}/documents/${documentId}/download`,
+    delete: (candidateId: number, documentId: number) =>
+        fetch(`${API_BASE_URL}/api/candidates/${candidateId}/documents/${documentId}`, { method: 'DELETE' }),
 };
