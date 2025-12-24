@@ -625,7 +625,7 @@ export default function CandidateDetailPage() {
                                             alert('Please select an evaluator');
                                             return;
                                         }
-                                        const scheduledAtValue = mockFormData.scheduledAt
+                                        const scheduledAtValue = mockFormData.scheduledAt && mockFormData.scheduledAt.trim()
                                             ? new Date(mockFormData.scheduledAt).toISOString()
                                             : null;
                                         const payload = {
@@ -686,8 +686,8 @@ export default function CandidateDetailPage() {
                                                         type="button"
                                                         onClick={() => setMockFormData({ ...mockFormData, role })}
                                                         className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${mockFormData.role === role
-                                                                ? 'bg-background text-primary shadow-sm'
-                                                                : 'text-muted-foreground hover:text-foreground'
+                                                            ? 'bg-background text-primary shadow-sm'
+                                                            : 'text-muted-foreground hover:text-foreground'
                                                             }`}
                                                     >
                                                         {role}
