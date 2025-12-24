@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Layers, UserCircle, Building2, Building, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Users, Layers, UserCircle, Building2, Building, BookOpen, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -13,6 +13,7 @@ const navItems = [
     { href: '/clients', label: 'Clients', icon: Building },
     { href: '/interviews', label: 'Interviews', icon: BookOpen },
     { href: '/users', label: 'Users', icon: UserCircle },
+    { href: '/admin/criteria', label: 'Mock Criteria', icon: Settings },
 ];
 
 export function Sidebar() {
