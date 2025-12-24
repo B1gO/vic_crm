@@ -98,7 +98,8 @@ export interface Candidate {
     city: string | null;
     state: string | null;
     relocation: boolean | null;
-    education: string | null;
+    school: string | null;
+    major: string | null;
     // Workspace
     lifecycleStage: LifecycleStage;
     batch: Batch | null;

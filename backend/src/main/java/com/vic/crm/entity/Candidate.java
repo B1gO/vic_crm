@@ -44,7 +44,8 @@ public class Candidate {
     private Boolean relocation;
 
     // Education
-    private String education;
+    private String school;
+    private String major;
 
     // Lifecycle
     @Enumerated(EnumType.STRING)

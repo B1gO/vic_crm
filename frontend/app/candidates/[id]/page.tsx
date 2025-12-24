@@ -572,7 +572,11 @@ export default function CandidateDetailPage() {
                                 <GraduationCap className="w-4 h-4 text-muted-foreground" />
                                 <div>
                                     <p className="text-xs text-muted-foreground">Education</p>
-                                    <p className="font-medium">{candidate.education || '-'}</p>
+                                    <p className="font-medium">
+                                        {candidate.school || candidate.major
+                                            ? `${candidate.major || ''} ${candidate.school ? '@ ' + candidate.school : ''}`.trim()
+                                            : '-'}
+                                    </p>
                                 </div>
                             </div>
                             {candidate.techTags && (

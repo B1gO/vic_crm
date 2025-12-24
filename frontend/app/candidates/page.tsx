@@ -31,10 +31,14 @@ export default function CandidatesPage() {
         recruiterId: '',
         batchId: '',
         wechatId: '',
+        wechatName: '',
         discordName: '',
         linkedinUrl: '',
         marketingLinkedinUrl: '',
-        education: ''
+        school: '',
+        major: '',
+        relocation: false,
+        notes: ''
     });
 
     useEffect(() => {
@@ -81,10 +85,14 @@ export default function CandidatesPage() {
                 recruiter: formData.recruiterId ? { id: Number(formData.recruiterId) } as User : undefined,
                 batch: formData.batchId ? { id: Number(formData.batchId) } as Batch : undefined,
                 wechatId: formData.wechatId || undefined,
+                wechatName: formData.wechatName || undefined,
                 discordName: formData.discordName || undefined,
                 linkedinUrl: formData.linkedinUrl || undefined,
                 marketingLinkedinUrl: formData.marketingLinkedinUrl || undefined,
-                education: formData.education || undefined
+                school: formData.school || undefined,
+                major: formData.major || undefined,
+                relocation: formData.relocation,
+                notes: formData.notes || undefined
             });
             setFormData({
                 name: '',
@@ -95,10 +103,14 @@ export default function CandidatesPage() {
                 recruiterId: users.length > 0 ? String(users[0].id) : '',
                 batchId: '',
                 wechatId: '',
+                wechatName: '',
                 discordName: '',
                 linkedinUrl: '',
                 marketingLinkedinUrl: '',
-                education: ''
+                school: '',
+                major: '',
+                relocation: false,
+                notes: ''
             });
             setShowForm(false);
             loadCandidates();
@@ -176,7 +188,7 @@ export default function CandidatesPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1 block">Visa</label>
+                                    <label className="text-sm font-medium mb-1 block">Work Auth</label>
                                     <select
                                         value={formData.workAuth}
                                         onChange={e => setFormData({ ...formData, workAuth: e.target.value as WorkAuth })}
@@ -204,6 +216,16 @@ export default function CandidatesPage() {
                                     />
                                 </div>
                                 <div>
+                                    <label className="text-sm font-medium mb-1 block">WeChat Name</label>
+                                    <input
+                                        type="text"
+                                        value={formData.wechatName}
+                                        onChange={e => setFormData({ ...formData, wechatName: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="微信名"
+                                    />
+                                </div>
+                                <div>
                                     <label className="text-sm font-medium mb-1 block">Discord</label>
                                     <input
                                         type="text"
@@ -213,6 +235,19 @@ export default function CandidatesPage() {
                                         placeholder="user#1234"
                                     />
                                 </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Phone</label>
+                                    <input
+                                        type="tel"
+                                        value={formData.phone}
+                                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="+1 (123) 456-7890"
+                                    />
+                                </div>
+                            </div>
+                            {/* Row 3: LinkedIn & Education */}
+                            <div className="grid grid-cols-4 gap-4">
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">LinkedIn</label>
                                     <input
@@ -233,19 +268,29 @@ export default function CandidatesPage() {
                                         placeholder="linkedin.com/in/..."
                                     />
                                 </div>
-                            </div>
-                            {/* Row 3: Education & Assignment */}
-                            <div className="grid grid-cols-4 gap-4">
-                                <div className="col-span-2">
-                                    <label className="text-sm font-medium mb-1 block">Education</label>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">School</label>
                                     <input
                                         type="text"
-                                        value={formData.education}
-                                        onChange={e => setFormData({ ...formData, education: e.target.value })}
+                                        value={formData.school}
+                                        onChange={e => setFormData({ ...formData, school: e.target.value })}
                                         className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                                        placeholder="MS Computer Science - Georgia Tech"
+                                        placeholder="Georgia Tech"
                                     />
                                 </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Major</label>
+                                    <input
+                                        type="text"
+                                        value={formData.major}
+                                        onChange={e => setFormData({ ...formData, major: e.target.value })}
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                        placeholder="MS Computer Science"
+                                    />
+                                </div>
+                            </div>
+                            {/* Row 4: Assignment */}
+                            <div className="grid grid-cols-4 gap-4">
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Recruiter</label>
                                     <select
@@ -272,8 +317,19 @@ export default function CandidatesPage() {
                                         ))}
                                     </select>
                                 </div>
+                                <div className="flex items-center pt-6">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.relocation}
+                                            onChange={e => setFormData({ ...formData, relocation: e.target.checked })}
+                                            className="w-4 h-4 rounded"
+                                        />
+                                        <span className="text-sm font-medium">Open to Relocation</span>
+                                    </label>
+                                </div>
                             </div>
-                            {/* Row 4: Actions */}
+                            {/* Row 5: Actions */}
                             <div className="flex gap-2 pt-2">
                                 <Button type="submit">Create</Button>
                                 <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -282,32 +338,6 @@ export default function CandidatesPage() {
                     </CardContent>
                 </Card>
             )}
-
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-4">
-                    <CardTitle className="text-lg">Engineer Pipeline</CardTitle>
-                    <div className="relative w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <input
-                            type="text"
-                            placeholder="Search candidates..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                    </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                    {loading ? (
-                        <div className="p-8 text-center text-muted-foreground">Loading...</div>
-                    ) : (
-                        <CandidateTable
-                            candidates={filteredCandidates}
-                            emptyMessage={search ? 'No candidates match your search' : 'No candidates yet'}
-                        />
-                    )}
-                </CardContent>
-            </Card>
         </div>
     );
 }
