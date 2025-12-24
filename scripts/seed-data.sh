@@ -124,13 +124,19 @@ curl -s -X POST "$BASE_URL/api/candidates" \
   -d '{
     "name":"Sara",
     "email":"Sara@gmail.com",
-    "wechatId":"1244343",
-    "discordName":"12123#65605",
+    "phone":"+1 (415) 555-0123",
+    "wechatId":"sara_wechat",
+    "wechatName":"莎拉",
+    "discordName":"sara#65605",
     "linkedinUrl":"https://linkedin.com/in/sara",
     "marketingLinkedinUrl":"https://linkedin.com/in/sara-dev",
     "workAuth":"OPT",
-    "city":"Kansas",
-    "education":"UCB",
+    "city":"San Francisco",
+    "state":"CA",
+    "school":"UC Berkeley",
+    "major":"MS Computer Science",
+    "relocation":true,
+    "notes":"Strong background in distributed systems. Previous intern at Google.",
     "lifecycleStage":"RECRUITMENT",
     "batch":{"id":1},
     "recruiter":{"id":1}
@@ -142,13 +148,19 @@ curl -s -X POST "$BASE_URL/api/candidates" \
   -d '{
     "name":"Zack",
     "email":"Zack@gmail.com",
-    "wechatId":"547954",
-    "discordName":"2328#3434",
+    "phone":"+1 (512) 555-0456",
+    "wechatId":"zack_tech",
+    "wechatName":"扎克",
+    "discordName":"zack#3434",
     "linkedinUrl":"https://linkedin.com/in/zack",
     "marketingLinkedinUrl":"https://linkedin.com/in/zack-dev",
     "workAuth":"CPT",
-    "city":"TX",
-    "education":"CSU",
+    "city":"Austin",
+    "state":"TX",
+    "school":"Colorado State University",
+    "major":"BS Software Engineering",
+    "relocation":false,
+    "notes":"5 years experience in Java/Spring Boot. Looking for backend roles.",
     "lifecycleStage":"RECRUITMENT",
     "batch":{"id":1},
     "recruiter":{"id":1}
@@ -158,15 +170,21 @@ curl -s -X POST "$BASE_URL/api/candidates" \
 curl -s -X POST "$BASE_URL/api/candidates" \
   -H "Content-Type: application/json" \
   -d '{
-    "name":"vincent",
+    "name":"Vincent",
     "email":"vincent@gmail.com",
-    "wechatId":"2382094",
+    "phone":"+1 (404) 555-0789",
+    "wechatId":"vincent_dev",
+    "wechatName":"文森特",
     "discordName":"vincent#23",
     "linkedinUrl":"https://linkedin.com/in/vincent",
     "marketingLinkedinUrl":"https://linkedin.com/in/vincent-dev",
     "workAuth":"OPT",
-    "city":"Atlanta, GA",
-    "education":"UCLA",
+    "city":"Atlanta",
+    "state":"GA",
+    "school":"UCLA",
+    "major":"MS Information Systems",
+    "relocation":true,
+    "notes":"Frontend specialist. Strong React/TypeScript skills. Previous experience at Meta.",
     "lifecycleStage":"RECRUITMENT",
     "batch":{"id":2},
     "recruiter":{"id":1}
@@ -176,21 +194,27 @@ curl -s -X POST "$BASE_URL/api/candidates" \
 curl -s -X POST "$BASE_URL/api/candidates" \
   -H "Content-Type: application/json" \
   -d '{
-    "name":"mingkai",
+    "name":"Mingkai",
     "email":"mingkai@gmail.com",
-    "wechatId":"121348912",
-    "discordName":"sdfjsl#131",
+    "phone":"+1 (678) 555-0321",
+    "wechatId":"mingkai_code",
+    "wechatName":"明凯",
+    "discordName":"mingkai#131",
     "linkedinUrl":"https://linkedin.com/in/mingkai",
     "marketingLinkedinUrl":"https://linkedin.com/in/mingkai-dev",
     "workAuth":"OPT",
-    "city":"Atlanta, GA",
-    "education":"UIUC",
+    "city":"Atlanta",
+    "state":"GA",
+    "school":"UIUC",
+    "major":"MS Computer Engineering",
+    "relocation":true,
+    "notes":"Full-stack developer. Focused on React and Node.js.",
     "lifecycleStage":"RECRUITMENT",
     "batch":{"id":2},
     "recruiter":{"id":4}
   }' > /dev/null
 
-echo "   ✅ Created 4 candidates (Sara, Zack, vincent, mingkai)"
+echo "   ✅ Created 4 candidates (Sara, Zack, Vincent, Mingkai)"
 
 # ============== MOCK CRITERIA ==============
 echo "📋 Creating Mock Criteria..."
