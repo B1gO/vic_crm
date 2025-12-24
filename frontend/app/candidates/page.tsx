@@ -338,6 +338,33 @@ export default function CandidatesPage() {
                     </CardContent>
                 </Card>
             )}
+
+            {/* Candidates List */}
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                    <CardTitle className="text-lg">Engineer Pipeline</CardTitle>
+                    <div className="relative w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <input
+                            type="text"
+                            placeholder="Search candidates..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                    </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                    {loading ? (
+                        <div className="p-8 text-center text-muted-foreground">Loading...</div>
+                    ) : (
+                        <CandidateTable
+                            candidates={filteredCandidates}
+                            emptyMessage={search ? 'No candidates match your search' : 'No candidates yet'}
+                        />
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }
