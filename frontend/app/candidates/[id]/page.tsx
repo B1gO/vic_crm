@@ -6,7 +6,7 @@ import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksA
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
-import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X, Plus, Building2, Send, Star, MessageSquare, Upload, Download, Trash2, File } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X, Plus, Building2, Send, Star, MessageSquare, Upload, Download, Trash2, File, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -63,6 +63,7 @@ export default function CandidateDetailPage() {
     const [documents, setDocuments] = useState<CandidateDocument[]>([]);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [uploadForm, setUploadForm] = useState({ documentType: 'RESUME' as DocumentType, notes: '', file: null as File | null });
+    const [showEditProfile, setShowEditProfile] = useState(false);
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [submitFormData, setSubmitFormData] = useState({
         vendorId: '',
@@ -519,106 +520,257 @@ export default function CandidateDetailPage() {
                 </div>
             ) : activeTab === 'profile' ? (
                 /* Profile Tab */
-                <div className="grid gap-6 md:grid-cols-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Contact Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Mail className="w-4 h-4 text-muted-foreground" />
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Email</p>
-                                    <p className="font-medium">{candidate.email || '-'}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Phone className="w-4 h-4 text-muted-foreground" />
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Phone</p>
-                                    <p className="font-medium">{candidate.phone || '-'}</p>
-                                </div>
-                            </div>
-                            {candidate.wechatId && (
-                                <div className="flex items-center gap-3">
-                                    <span className="text-muted-foreground">💬</span>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">WeChat</p>
-                                        <p className="font-medium">{candidate.wechatName || candidate.wechatId}</p>
-                                    </div>
-                                </div>
+                <div className="space-y-6">
+                    {/* Edit Button */}
+                    <div className="flex justify-end">
+                        <Button
+                            variant={showEditProfile ? "outline" : "default"}
+                            onClick={() => setShowEditProfile(!showEditProfile)}
+                        >
+                            {showEditProfile ? (
+                                <>
+                                    <X className="w-4 h-4 mr-2" />
+                                    Cancel
+                                </>
+                            ) : (
+                                <>
+                                    <Pencil className="w-4 h-4 mr-2" />
+                                    Edit Profile
+                                </>
                             )}
-                            {candidate.discordName && (
-                                <div className="flex items-center gap-3">
-                                    <span className="text-muted-foreground">🎮</span>
-                                    <div>
-                                        <p className="text-xs text-muted-foreground">Discord</p>
-                                        <p className="font-medium">{candidate.discordName}</p>
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                        </Button>
+                    </div>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Background</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <MapPin className="w-4 h-4 text-muted-foreground" />
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Location</p>
-                                    <p className="font-medium">
-                                        {[candidate.city, candidate.state].filter(Boolean).join(', ') || '-'}
-                                        {candidate.relocation && <span className="text-xs text-muted-foreground ml-2">(Open to relocation)</span>}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <span className="text-muted-foreground">🛂</span>
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Work Authorization</p>
-                                    <p className="font-medium">
-                                        {candidate.workAuth ? workAuthLabels[candidate.workAuth] : '-'}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <GraduationCap className="w-4 h-4 text-muted-foreground" />
-                                <div>
-                                    <p className="text-xs text-muted-foreground">Education</p>
-                                    <p className="font-medium">
-                                        {candidate.school || candidate.major
-                                            ? `${candidate.major || ''} ${candidate.school ? '@ ' + candidate.school : ''}`.trim()
-                                            : '-'}
-                                    </p>
-                                </div>
-                            </div>
-                            {candidate.techTags && (
-                                <div>
-                                    <p className="text-xs text-muted-foreground mb-2">Skills</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {candidate.techTags.split(',').map((tag, i) => (
-                                            <span key={i} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
-                                                {tag.trim()}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {candidate.notes && (
-                        <Card className="md:col-span-2">
+                    {showEditProfile ? (
+                        /* Edit Form */
+                        <Card>
                             <CardHeader>
-                                <CardTitle>Notes</CardTitle>
+                                <CardTitle>Edit Profile</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-sm">{candidate.notes}</p>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const formData = new FormData(e.currentTarget);
+                                    try {
+                                        const updated = await candidatesApi.update(candidate.id, {
+                                            ...candidate,
+                                            name: formData.get('name') as string,
+                                            email: formData.get('email') as string || undefined,
+                                            phone: formData.get('phone') as string || undefined,
+                                            wechatId: formData.get('wechatId') as string || undefined,
+                                            wechatName: formData.get('wechatName') as string || undefined,
+                                            discordName: formData.get('discordName') as string || undefined,
+                                            city: formData.get('city') as string || undefined,
+                                            state: formData.get('state') as string || undefined,
+                                            workAuth: (formData.get('workAuth') as WorkAuth) || undefined,
+                                            school: formData.get('school') as string || undefined,
+                                            major: formData.get('major') as string || undefined,
+                                            relocation: formData.get('relocation') === 'on',
+                                            notes: formData.get('notes') as string || undefined,
+                                            linkedinUrl: formData.get('linkedinUrl') as string || undefined,
+                                            marketingLinkedinUrl: formData.get('marketingLinkedinUrl') as string || undefined,
+                                        });
+                                        setCandidate(updated);
+                                        setShowEditProfile(false);
+                                    } catch (error) {
+                                        console.error('Failed to update:', error);
+                                    }
+                                }} className="space-y-4">
+                                    {/* Row 1 */}
+                                    <div className="grid grid-cols-4 gap-4">
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Name *</label>
+                                            <input name="name" defaultValue={candidate.name} required className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Email</label>
+                                            <input name="email" type="email" defaultValue={candidate.email || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Phone</label>
+                                            <input name="phone" defaultValue={candidate.phone || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Work Auth</label>
+                                            <select name="workAuth" defaultValue={candidate.workAuth || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background">
+                                                <option value="">Select...</option>
+                                                <option value="CITIZEN">US Citizen</option>
+                                                <option value="GC">Green Card</option>
+                                                <option value="OPT">OPT</option>
+                                                <option value="H1B">H1B</option>
+                                                <option value="CPT">CPT</option>
+                                                <option value="OTHER">Other</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    {/* Row 2 */}
+                                    <div className="grid grid-cols-4 gap-4">
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">WeChat ID</label>
+                                            <input name="wechatId" defaultValue={candidate.wechatId || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">WeChat Name</label>
+                                            <input name="wechatName" defaultValue={candidate.wechatName || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Discord</label>
+                                            <input name="discordName" defaultValue={candidate.discordName || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">City</label>
+                                            <input name="city" defaultValue={candidate.city || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                    </div>
+                                    {/* Row 3 */}
+                                    <div className="grid grid-cols-4 gap-4">
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">State</label>
+                                            <input name="state" defaultValue={candidate.state || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">School</label>
+                                            <input name="school" defaultValue={candidate.school || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Major</label>
+                                            <input name="major" defaultValue={candidate.major || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </div>
+                                        <div className="flex items-center pt-6">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input name="relocation" type="checkbox" defaultChecked={candidate.relocation || false} className="w-4 h-4 rounded" />
+                                                <span className="text-sm font-medium">Open to Relocation</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {/* Row 4 - LinkedIn */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">LinkedIn</label>
+                                            <input name="linkedinUrl" type="url" defaultValue={candidate.linkedinUrl || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" placeholder="linkedin.com/in/..." />
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Marketing LinkedIn</label>
+                                            <input name="marketingLinkedinUrl" type="url" defaultValue={candidate.marketingLinkedinUrl || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" placeholder="linkedin.com/in/..." />
+                                        </div>
+                                    </div>
+                                    {/* Notes */}
+                                    <div>
+                                        <label className="text-sm font-medium mb-1 block">Notes</label>
+                                        <textarea name="notes" defaultValue={candidate.notes || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background min-h-[100px]" placeholder="e.g. 实力很强，可以 relocation 但 prefer 湾区" />
+                                    </div>
+                                    {/* Actions */}
+                                    <div className="flex gap-2">
+                                        <Button type="submit">Save Changes</Button>
+                                        <Button type="button" variant="outline" onClick={() => setShowEditProfile(false)}>Cancel</Button>
+                                    </div>
+                                </form>
                             </CardContent>
                         </Card>
+                    ) : (
+                        /* Read-only View */
+                        <div className="grid gap-6 md:grid-cols-2">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Contact Information</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <Mail className="w-4 h-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Email</p>
+                                            <p className="font-medium">{candidate.email || '-'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Phone className="w-4 h-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Phone</p>
+                                            <p className="font-medium">{candidate.phone || '-'}</p>
+                                        </div>
+                                    </div>
+                                    {(candidate.wechatId || candidate.wechatName) && (
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-muted-foreground">💬</span>
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">WeChat</p>
+                                                <p className="font-medium">{candidate.wechatName || candidate.wechatId}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {candidate.discordName && (
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-muted-foreground">🎮</span>
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">Discord</p>
+                                                <p className="font-medium">{candidate.discordName}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Background</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <MapPin className="w-4 h-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Location</p>
+                                            <p className="font-medium">
+                                                {[candidate.city, candidate.state].filter(Boolean).join(', ') || '-'}
+                                                {candidate.relocation && <span className="text-xs text-muted-foreground ml-2">(Open to relocation)</span>}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-muted-foreground">🛂</span>
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Work Authorization</p>
+                                            <p className="font-medium">
+                                                {candidate.workAuth ? workAuthLabels[candidate.workAuth] : '-'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Education</p>
+                                            <p className="font-medium">
+                                                {candidate.school || candidate.major
+                                                    ? `${candidate.major || ''} ${candidate.school ? '@ ' + candidate.school : ''}`.trim()
+                                                    : '-'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {candidate.techTags && (
+                                        <div>
+                                            <p className="text-xs text-muted-foreground mb-2">Skills</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {candidate.techTags.split(',').map((tag, i) => (
+                                                    <span key={i} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                                                        {tag.trim()}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {candidate.notes && (
+                                <Card className="md:col-span-2">
+                                    <CardHeader>
+                                        <CardTitle>Notes</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm">{candidate.notes}</p>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </div>
                     )}
                 </div>
             ) : activeTab === 'mocks' ? (
