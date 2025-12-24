@@ -25,11 +25,11 @@ public class MockService {
     }
 
     public List<Mock> findByCandidateId(Long candidateId) {
-        return mockRepository.findByCandidateId(candidateId);
+        return mockRepository.findByCandidateIdOrderByScheduledAtDesc(candidateId);
     }
 
     public List<Mock> findByEvaluatorId(Long evaluatorId) {
-        return mockRepository.findByEvaluatorId(evaluatorId);
+        return mockRepository.findByEvaluatorIdOrderByScheduledAtDesc(evaluatorId);
     }
 
     public Mock create(Mock mock) {

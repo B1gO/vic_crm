@@ -8,6 +8,7 @@ import java.util.List;
 
 @Repository
 public interface MockRepository extends JpaRepository<Mock, Long> {
-    List<Mock> findByCandidateId(Long candidateId);
-    List<Mock> findByEvaluatorId(Long evaluatorId);
+    List<Mock> findByCandidateIdOrderByScheduledAtDesc(Long candidateId);
+
+    List<Mock> findByEvaluatorIdOrderByScheduledAtDesc(Long evaluatorId);
 }
