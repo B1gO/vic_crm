@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType } from '@/lib/api';
+import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
@@ -64,6 +64,7 @@ export default function CandidateDetailPage() {
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [uploadForm, setUploadForm] = useState({ documentType: 'RESUME' as DocumentType, notes: '', file: null as File | null });
     const [showEditProfile, setShowEditProfile] = useState(false);
+    const [batches, setBatches] = useState<Batch[]>([]);
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [submitFormData, setSubmitFormData] = useState({
         vendorId: '',
@@ -85,8 +86,9 @@ export default function CandidateDetailPage() {
                 mocksApi.getByCandidate(id),
                 usersApi.getAll(),
                 documentsApi.getByCandidate(id),
+                batchesApi.getAll(),
             ])
-                .then(([c, t, s, v, cl, m, u, d]) => {
+                .then(([c, t, s, v, cl, m, u, d, b]) => {
                     setCandidate(c);
                     setTimeline(t);
                     setSubmissions(s);
@@ -95,6 +97,7 @@ export default function CandidateDetailPage() {
                     setMocks(m);
                     setUsers(u);
                     setDocuments(d);
+                    setBatches(b);
                 })
                 .catch(console.error)
                 .finally(() => setLoading(false));
@@ -552,6 +555,7 @@ export default function CandidateDetailPage() {
                                     e.preventDefault();
                                     const formData = new FormData(e.currentTarget);
                                     try {
+                                        const batchId = formData.get('batchId');
                                         const updated = await candidatesApi.update(candidate.id, {
                                             ...candidate,
                                             name: formData.get('name') as string,
@@ -569,6 +573,7 @@ export default function CandidateDetailPage() {
                                             notes: formData.get('notes') as string || undefined,
                                             linkedinUrl: formData.get('linkedinUrl') as string || undefined,
                                             marketingLinkedinUrl: formData.get('marketingLinkedinUrl') as string || undefined,
+                                            batch: batchId ? { id: Number(batchId) } as Batch : null,
                                         });
                                         setCandidate(updated);
                                         setShowEditProfile(false);
@@ -636,12 +641,22 @@ export default function CandidateDetailPage() {
                                             <label className="text-sm font-medium mb-1 block">Major</label>
                                             <input name="major" defaultValue={candidate.major || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background" />
                                         </div>
-                                        <div className="flex items-center pt-6">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input name="relocation" type="checkbox" defaultChecked={candidate.relocation || false} className="w-4 h-4 rounded" />
-                                                <span className="text-sm font-medium">Open to Relocation</span>
-                                            </label>
+                                        <div>
+                                            <label className="text-sm font-medium mb-1 block">Batch</label>
+                                            <select name="batchId" defaultValue={candidate.batch?.id || ''} className="w-full px-3 py-2 border border-border rounded-lg bg-background">
+                                                <option value="">None</option>
+                                                {batches.map(batch => (
+                                                    <option key={batch.id} value={batch.id}>{batch.name}</option>
+                                                ))}
+                                            </select>
                                         </div>
+                                    </div>
+                                    {/* Row 4 - Relocation */}
+                                    <div className="flex items-center">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input name="relocation" type="checkbox" defaultChecked={candidate.relocation || false} className="w-4 h-4 rounded" />
+                                            <span className="text-sm font-medium">Open to Relocation</span>
+                                        </label>
                                     </div>
                                     {/* Row 4 - LinkedIn */}
                                     <div className="grid grid-cols-2 gap-4">

@@ -51,6 +51,7 @@ export function CandidateTable({ candidates, emptyMessage = 'No candidates yet' 
                     <th className="p-4">Name</th>
                     <th className="p-4">Status</th>
                     <th className="p-4">Stage</th>
+                    <th className="p-4">Batch</th>
                     <th className="p-4">WeChat</th>
                     <th className="p-4">Location</th>
                     <th className="p-4">Visa</th>
@@ -74,6 +75,9 @@ export function CandidateTable({ candidates, emptyMessage = 'No candidates yet' 
                         </td>
                         <td className="p-4">
                             <StageBadge stage={candidate.lifecycleStage} />
+                        </td>
+                        <td className="p-4 text-sm text-muted-foreground">
+                            {candidate.batch?.name || '-'}
                         </td>
                         <td className="p-4 text-muted-foreground">
                             {candidate.wechatName || candidate.wechatId || '-'}
