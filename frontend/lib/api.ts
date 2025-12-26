@@ -1,7 +1,7 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, Vendor, Client, Submission, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, Vendor, Client, Submission, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType } from '@/types';
 
 // Re-export types for convenience
 export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType } from '@/types';

@@ -11,7 +11,9 @@ import com.vic.crm.enums.CloseReason;
 import com.vic.crm.enums.TimelineEventType;
 import com.vic.crm.exception.InvalidTransitionException;
 import com.vic.crm.exception.ResourceNotFoundException;
+import com.vic.crm.repository.BatchRepository;
 import com.vic.crm.repository.CandidateRepository;
+import com.vic.crm.repository.MockRepository;
 import com.vic.crm.repository.TimelineEventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,7 +50,8 @@ public class CandidateService {
                     CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
             CandidateStage.OFFERED, Set.of(CandidateStage.PLACED, CandidateStage.MARKETING,
                     CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
-            CandidateStage.PLACED, Set.of(CandidateStage.MARKETING, CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN),
+            CandidateStage.PLACED,
+            Set.of(CandidateStage.MARKETING, CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN),
             CandidateStage.ELIMINATED, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
                     CandidateStage.RESUME, CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED),
             CandidateStage.WITHDRAWN, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
@@ -97,6 +100,8 @@ public class CandidateService {
 
     private final CandidateRepository candidateRepository;
     private final TimelineEventRepository timelineEventRepository;
+    private final BatchRepository batchRepository;
+    private final MockRepository mockRepository;
 
     public List<Candidate> findAll() {
         return candidateRepository.findAll();
@@ -150,19 +155,30 @@ public class CandidateService {
         existing.setEmail(updated.getEmail());
         existing.setPhone(updated.getPhone());
         existing.setNotes(updated.getNotes());
-        existing.setBatch(updated.getBatch());
         existing.setResumeReady(updated.getResumeReady());
+
+        // Load full batch entity from database if batch ID is provided
+        Batch newBatch = null;
+        if (updated.getBatch() != null && updated.getBatch().getId() != null) {
+            newBatch = batchRepository.findById(updated.getBatch().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Batch not found with id: " + updated.getBatch().getId()));
+            existing.setBatch(newBatch);
+        } else {
+            existing.setBatch(null);
+        }
+
         Candidate saved = candidateRepository.save(existing);
 
-        if (previousBatch == null && updated.getBatch() != null && existing.getStage() == CandidateStage.SOURCING) {
+        if (previousBatch == null && newBatch != null && existing.getStage() == CandidateStage.SOURCING) {
             if (saved.getSubStatus() != CandidateSubStatus.BATCH_ASSIGNED) {
                 saved.setSubStatus(CandidateSubStatus.BATCH_ASSIGNED);
                 saved = candidateRepository.save(saved);
             }
             String title = "Batch Assigned";
-            String batchLabel = updated.getBatch().getName() != null
-                    ? updated.getBatch().getName()
-                    : String.valueOf(updated.getBatch().getId());
+            String batchLabel = newBatch.getName() != null
+                    ? newBatch.getName()
+                    : String.valueOf(newBatch.getId());
             String description = String.format("Assigned to batch %s.", batchLabel);
             createTimelineEvent(saved, TimelineEventType.BATCH, title, description,
                     saved.getStage(), saved.getStage(), "batch_assigned", saved.getSubStatus(),
@@ -237,6 +253,9 @@ public class CandidateService {
         if (candidate.getSubStatus() == subStatus) {
             return candidate;
         }
+
+        // Validate mock-managed substatuses
+        validateMockManagedSubStatus(candidateId, stage, subStatus);
 
         candidate.setSubStatus(subStatus);
         syncResumeReady(candidate, stage, subStatus);
@@ -486,6 +505,61 @@ public class CandidateService {
                 .eventDate(eventDate)
                 .build();
         return timelineEventRepository.save(event);
+    }
+
+    /**
+     * Validate mock-managed substatuses to ensure corresponding mock records exist.
+     * This prevents manual substatus changes that bypass the mock
+     * scheduling/feedback flow.
+     */
+    private void validateMockManagedSubStatus(Long candidateId, CandidateStage stage, CandidateSubStatus subStatus) {
+        // Screening mock statuses (SOURCING stage)
+        if (stage == CandidateStage.SOURCING) {
+            if (subStatus == CandidateSubStatus.SCREENING_SCHEDULED) {
+                if (mockRepository.findByCandidateIdAndStage(candidateId, "screening").isEmpty()) {
+                    throw new InvalidTransitionException(
+                            "Cannot set SCREENING_SCHEDULED without a scheduled mock. Please schedule a Screening mock via the Mocks section.");
+                }
+            }
+            if (subStatus == CandidateSubStatus.SCREENING_PASSED || subStatus == CandidateSubStatus.SCREENING_FAILED) {
+                if (mockRepository.findCompletedByCandidateIdAndStage(candidateId, "screening").isEmpty()) {
+                    throw new InvalidTransitionException(
+                            "Cannot set " + subStatus
+                                    + " without a completed mock. Please complete the Screening mock feedback via the Mocks section.");
+                }
+            }
+        }
+
+        // Theory mock statuses (MOCKING stage)
+        if (stage == CandidateStage.MOCKING) {
+            if (subStatus == CandidateSubStatus.MOCK_THEORY_SCHEDULED) {
+                if (mockRepository.findByCandidateIdAndStage(candidateId, "techmock").isEmpty()) {
+                    throw new InvalidTransitionException(
+                            "Cannot set MOCK_THEORY_SCHEDULED without a scheduled mock. Please schedule a Theory mock via the Mocks section.");
+                }
+            }
+            if (subStatus == CandidateSubStatus.MOCK_THEORY_PASSED
+                    || subStatus == CandidateSubStatus.MOCK_THEORY_FAILED) {
+                if (mockRepository.findCompletedByCandidateIdAndStage(candidateId, "techmock").isEmpty()) {
+                    throw new InvalidTransitionException(
+                            "Cannot set " + subStatus
+                                    + " without a completed mock. Please complete the Theory mock feedback via the Mocks section.");
+                }
+            }
+            if (subStatus == CandidateSubStatus.MOCK_REAL_SCHEDULED) {
+                if (mockRepository.findByCandidateIdAndStage(candidateId, "realmock").isEmpty()) {
+                    throw new InvalidTransitionException(
+                            "Cannot set MOCK_REAL_SCHEDULED without a scheduled mock. Please schedule a Real mock via the Mocks section.");
+                }
+            }
+            if (subStatus == CandidateSubStatus.MOCK_REAL_PASSED || subStatus == CandidateSubStatus.MOCK_REAL_FAILED) {
+                if (mockRepository.findCompletedByCandidateIdAndStage(candidateId, "realmock").isEmpty()) {
+                    throw new InvalidTransitionException(
+                            "Cannot set " + subStatus
+                                    + " without a completed mock. Please complete the Real mock feedback via the Mocks section.");
+                }
+            }
+        }
     }
 
     private boolean isBlank(String value) {

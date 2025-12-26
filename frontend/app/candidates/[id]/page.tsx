@@ -9,6 +9,7 @@ import { StageBadge } from '@/components/ui/badge';
 import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X, Plus, Building2, Send, Star, MessageSquare, Upload, Download, Trash2, File, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { StageProgressCard } from '@/components/StageProgressCard';
 
 const statusColors: Record<string, string> = {
     VENDOR_SCREENING: 'bg-yellow-500/10 text-yellow-600',
@@ -477,200 +478,18 @@ export default function CandidateDetailPage() {
 
             {/* Tab Content */}
             {activeTab === 'workspace' ? (
-                <div className="grid gap-6 md:grid-cols-2">
-                    {/* Market Entry Gate */}
-                    <Card>
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                                ⚙️ Market Entry Gate
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {transitionError && (
-                                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span>{transitionError}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setTransitionError(null)}
-                                            className="text-red-600 hover:text-red-800"
-                                        >
-                                            Dismiss
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                            <div className="pt-3 border-t space-y-2">
-                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                    Stage / Sub-status
-                                </label>
-                                <div className="grid gap-3 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        {stageOrder.map(stage => (
-                                            <button
-                                                key={stage}
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelectedStage(stage);
-                                                    if (stage === candidate.stage) {
-                                                        setSelectedSubStatus(candidate.subStatus);
-                                                    }
-                                                }}
-                                                className={cn(
-                                                    "w-full text-left px-3 py-2 rounded-lg border text-sm transition",
-                                                    stage === activeStage
-                                                        ? "border-primary bg-primary/5 text-foreground"
-                                                        : "border-border text-muted-foreground hover:text-foreground"
-                                                )}
-                                            >
-                                                {stage.replace(/_/g, ' ')}
-                                                {stage === candidate.stage && (
-                                                    <span className="ml-2 text-[11px] text-primary">Current</span>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="space-y-2">
-                                        {activeSubStatusOptions.length === 0 ? (
-                                            <div className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-                                                Sub-status in Marketing is driven by submissions.
-                                            </div>
-                                        ) : (
-                                            activeSubStatusOptions.map(option => {
-                                                const isSelected = isCurrentStageSelected && option === selectedSubStatus;
-                                                return (
-                                                    <button
-                                                        key={option}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (isCurrentStageSelected) {
-                                                                setSelectedSubStatus(option);
-                                                            }
-                                                        }}
-                                                        disabled={!isCurrentStageSelected}
-                                                        className={cn(
-                                                            "w-full text-left px-3 py-2 rounded-lg border text-sm transition",
-                                                            isSelected
-                                                                ? "border-primary bg-primary/5 text-foreground"
-                                                                : "border-border text-muted-foreground",
-                                                            !isCurrentStageSelected && "cursor-not-allowed opacity-60"
-                                                        )}
-                                                    >
-                                                        {option.replace(/_/g, ' ')}
-                                                    </button>
-                                                );
-                                            })
-                                        )}
-                                    </div>
-                                </div>
-                                {activeSubStatusOptions.length > 0 ? (
-                                    isCurrentStageSelected ? (
-                                        <>
-                                            <input
-                                                value={subStatusReason}
-                                                onChange={e => setSubStatusReason(e.target.value)}
-                                                placeholder="Reason (optional)"
-                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                                            />
-                                            <Button
-                                                variant="outline"
-                                                onClick={handleSubStatusUpdate}
-                                                disabled={subStatusUpdating || selectedSubStatus === candidate.subStatus}
-                                            >
-                                                Update Sub-status
-                                            </Button>
-                                        </>
-                                    ) : (
-                                        <p className="text-xs text-muted-foreground">
-                                            Select the current stage to update sub-status.
-                                        </p>
-                                    )
-                                ) : (
-                                    <p className="text-xs text-muted-foreground">
-                                        No editable sub-status for this stage.
-                                    </p>
-                                )}
-                            </div>
-
-                            {nextStages.length > 0 && (
-                                <div className="pt-3 border-t space-y-2">
-                                    {nextStages.map(stage => (
-                                        <Button
-                                            key={stage}
-                                            className="w-full justify-between"
-                                            variant={stage === 'ELIMINATED' ? 'destructive' : 'outline'}
-                                            onClick={() => handleTransition(stage)}
-                                            disabled={transitioning}
-                                        >
-                                            Move to {stage.replace('_', ' ')}
-                                            <ArrowRight className="w-4 h-4" />
-                                        </Button>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-
-                    {/* Career Timeline */}
-                    <Card className="md:col-span-1">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                                🕐 Career Timeline
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {timeline.length === 0 ? (
-                                <p className="text-muted-foreground text-sm">No events yet</p>
-                            ) : (
-                                <div className="space-y-4">
-                                    {timeline.slice(0, 8).map((t, i) => (
-                                        <div key={t.id} className="flex gap-3 relative">
-                                            {i < timeline.length - 1 && (
-                                                <div className="absolute left-[11px] top-8 w-0.5 h-full bg-border" />
-                                            )}
-                                            <div className={cn(
-                                                "w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white",
-                                                t.eventType === 'STAGE_CHANGED' || t.eventType === 'STAGE_CHANGE' ? 'bg-primary' :
-                                                    t.eventType === 'SUBSTATUS_CHANGED' ? 'bg-sky-500' :
-                                                    t.eventType === 'CANDIDATE_CREATED' ? 'bg-slate-500' :
-                                                        t.eventType === 'ON_HOLD' ? 'bg-gray-500' :
-                                                            t.eventType === 'ELIMINATED' || t.eventType === 'WITHDRAWN' || t.eventType === 'CLOSED' ? 'bg-red-500' :
-                                                            t.eventType === 'PLACED' ? 'bg-indigo-500' :
-                                                                t.eventType === 'OFFERED' ? 'bg-lime-500' :
-                                                                    t.eventType === 'CONTRACT' ? 'bg-emerald-500' :
-                                                                        t.eventType === 'MOCK' ? 'bg-violet-500' :
-                                                                            t.eventType === 'BATCH' ? 'bg-purple-500' :
-                                                                                t.eventType === 'COMMUNICATION' ? 'bg-blue-500' : 'bg-slate-400'
-                                            )}>
-                                                {(t.eventType === 'STAGE_CHANGED' || t.eventType === 'STAGE_CHANGE') && <ArrowRight className="w-3 h-3" />}
-                                                {t.eventType === 'SUBSTATUS_CHANGED' && <Pencil className="w-3 h-3" />}
-                                                {t.eventType === 'CANDIDATE_CREATED' && <Plus className="w-3 h-3" />}
-                                                {t.eventType === 'ON_HOLD' && <Clock className="w-3 h-3" />}
-                                                {(t.eventType === 'ELIMINATED' || t.eventType === 'WITHDRAWN' || t.eventType === 'CLOSED') && <X className="w-3 h-3" />}
-                                                {t.eventType === 'OFFERED' && <FileText className="w-3 h-3" />}
-                                                {t.eventType === 'PLACED' && <Check className="w-3 h-3" />}
-                                                {t.eventType === 'CONTRACT' && <FileText className="w-3 h-3" />}
-                                                {t.eventType === 'MOCK' && <Star className="w-3 h-3" />}
-                                                {t.eventType === 'BATCH' && <BookOpen className="w-3 h-3" />}
-                                                {t.eventType === 'COMMUNICATION' && <Users className="w-3 h-3" />}
-                                            </div>
-                                            <div className="pb-4">
-                                                <p className="text-xs text-muted-foreground">
-                                                    {new Date(t.eventDate).toLocaleDateString()}
-                                                </p>
-                                                <p className="font-medium text-sm">{t.title}</p>
-                                                {t.description && (
-                                                    <p className="text-xs text-muted-foreground">{t.description}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
+                <StageProgressCard
+                    candidate={candidate}
+                    timeline={timeline}
+                    onUpdate={(updated, newTimeline) => {
+                        setCandidate(updated);
+                        setTimeline(newTimeline);
+                    }}
+                    onTransition={handleTransition}
+                    transitioning={transitioning}
+                    error={transitionError}
+                    onClearError={() => setTransitionError(null)}
+                />
             ) : activeTab === 'submissions' ? (
                 /* Submissions Tab */
                 <div className="space-y-4">
