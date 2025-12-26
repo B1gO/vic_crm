@@ -36,7 +36,7 @@ public class Submission {
     @JoinColumn(name = "client_id")
     private Client client;
 
-    // Vendor contact name who submitted (simple string, not User reference)
+    // Vendor contact who submitted
     private String vendorContact;
 
     @Column(nullable = false)
@@ -45,14 +45,54 @@ public class Submission {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private SubmissionStatus status = SubmissionStatus.VENDOR_SCREENING;
+    private SubmissionStatus status = SubmissionStatus.SUBMITTED;
 
+    // Screening type (OA, INTERVIEW, DIRECT)
     @Enumerated(EnumType.STRING)
     private ScreeningType screeningType;
 
+    // Current interview round (1, 2, 3...)
     @Builder.Default
     private Integer currentRound = 0;
 
+    // Total rounds required for this submission (can be 1, 2, 3, etc.)
+    private Integer totalRounds;
+
+    // Stage tracking flags (optional stages)
+    @Builder.Default
+    private Boolean hasOa = false;
+
+    @Builder.Default
+    private Boolean hasVendorScreening = false;
+
+    // OA details (optional)
+    private LocalDateTime oaScheduledAt;
+    private String oaScore;
+    @Column(columnDefinition = "TEXT")
+    private String oaFeedback;
+
+    // Vendor screening details (optional)
+    private LocalDateTime vendorScreeningAt;
+    @Column(columnDefinition = "TEXT")
+    private String vendorScreeningFeedback;
+
+    // Current interview scheduled date
+    private LocalDateTime interviewScheduledAt;
+
+    // Last feedback received
+    @Column(columnDefinition = "TEXT")
+    private String lastFeedback;
+
+    // Fail reason if rejected
+    @Column(columnDefinition = "TEXT")
+    private String failReason;
+
+    // Offer details
+    private LocalDateTime offerDate;
+    @Column(columnDefinition = "TEXT")
+    private String offerDetails;
+
+    // General notes
     @Column(columnDefinition = "TEXT")
     private String notes;
 

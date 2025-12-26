@@ -1,10 +1,10 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, Vendor, Client, Submission, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, Vendor, Client, Submission, SubmissionEvent, SubmissionStatus, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType } from '@/types';
 
 // Re-export types for convenience
-export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType } from '@/types';
+export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, Submission, SubmissionEvent, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -108,8 +108,38 @@ export const submissionsApi = {
     getById: (id: number) => fetchApi<Submission>(`/api/submissions/${id}`),
     create: (data: Partial<Submission>) => fetchApi<Submission>('/api/submissions', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<Submission>) => fetchApi<Submission>(`/api/submissions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    advanceRound: (id: number) => fetchApi<Submission>(`/api/submissions/${id}/advance`, { method: 'POST' }),
     delete: (id: number) => fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' }),
+
+    // Status update
+    updateStatus: (id: number, payload: { status: SubmissionStatus; notes?: string; result?: string; round?: number; actorId?: number }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/status`, { method: 'POST', body: JSON.stringify(payload) }),
+
+    // Event timeline
+    getEvents: (id: number) => fetchApi<SubmissionEvent[]>(`/api/submissions/${id}/events`),
+
+    // OA endpoints
+    scheduleOa: (id: number, payload: { scheduledAt: string; actorId?: number }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/oa/schedule`, { method: 'POST', body: JSON.stringify(payload) }),
+    recordOaResult: (id: number, payload: { passed: boolean; score?: string; feedback?: string; actorId?: number }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/oa/result`, { method: 'POST', body: JSON.stringify(payload) }),
+
+    // Vendor screening endpoints
+    scheduleVendorScreening: (id: number, payload: { scheduledAt: string; actorId?: number }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/vendor-screening/schedule`, { method: 'POST', body: JSON.stringify(payload) }),
+    recordVendorScreeningResult: (id: number, payload: { passed: boolean; feedback?: string; actorId?: number }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/vendor-screening/result`, { method: 'POST', body: JSON.stringify(payload) }),
+
+    // Interview endpoints
+    scheduleInterview: (id: number, payload: { round: number; scheduledAt: string; actorId?: number }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/interview/schedule`, { method: 'POST', body: JSON.stringify(payload) }),
+    recordInterviewResult: (id: number, payload: { round: number; passed: boolean; feedback?: string; actorId?: number }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/interview/result`, { method: 'POST', body: JSON.stringify(payload) }),
+
+    // Offer endpoints
+    recordOffer: (id: number, payload: { offerDetails?: string; offerDate?: string; actorId?: number }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/offer`, { method: 'POST', body: JSON.stringify(payload) }),
+    respondToOffer: (id: number, payload: { accepted: boolean; notes?: string; actorId?: number }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/offer/respond`, { method: 'POST', body: JSON.stringify(payload) }),
 };
 
 // Interview Experiences API

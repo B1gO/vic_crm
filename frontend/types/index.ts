@@ -85,7 +85,13 @@ export type CloseReason =
 
 export type OfferType = 'W2' | 'C2C';
 
-export type SubmissionStatus = 'VENDOR_SCREENING' | 'CLIENT_ROUND' | 'OFFERED' | 'PLACED' | 'REJECTED';
+export type SubmissionStatus =
+    | 'SUBMITTED'
+    | 'OA_SCHEDULED' | 'OA_PASSED' | 'OA_FAILED'
+    | 'VENDOR_SCREENING_SCHEDULED' | 'VENDOR_SCREENING_PASSED' | 'VENDOR_SCREENING_FAILED'
+    | 'CLIENT_INTERVIEW'
+    | 'OFFERED' | 'OFFER_ACCEPTED' | 'OFFER_DECLINED'
+    | 'PLACED' | 'REJECTED' | 'WITHDRAWN';
 export type ScreeningType = 'OA' | 'INTERVIEW' | 'DIRECT';
 
 // === Entities ===
@@ -181,14 +187,41 @@ export interface Submission {
     candidate: Candidate;
     vendor: Vendor;
     client: Client | null;
-    vendorContact: string | null;  // Vendor's contact name
+    vendorContact: string | null;
     positionTitle: string;
     status: SubmissionStatus;
     screeningType: ScreeningType | null;
     currentRound: number;
+    totalRounds: number | null;
+    hasOa: boolean;
+    hasVendorScreening: boolean;
+    oaScheduledAt: string | null;
+    oaScore: string | null;
+    oaFeedback: string | null;
+    vendorScreeningAt: string | null;
+    vendorScreeningFeedback: string | null;
+    interviewScheduledAt: string | null;
+    lastFeedback: string | null;
+    failReason: string | null;
+    offerDate: string | null;
+    offerDetails: string | null;
     notes: string | null;
     submittedAt: string;
     updatedAt: string;
+}
+
+export interface SubmissionEvent {
+    id: number;
+    submission: { id: number };
+    fromStatus: SubmissionStatus | null;
+    toStatus: SubmissionStatus;
+    eventType: string;
+    round: number | null;
+    title: string;
+    notes: string | null;
+    result: string | null;
+    actor: User | null;
+    eventDate: string;
 }
 
 export interface InterviewExperience {

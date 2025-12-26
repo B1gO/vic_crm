@@ -10,21 +10,40 @@ import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { StageProgressCard } from '@/components/StageProgressCard';
+import { SubmissionPipelineCard } from '@/components/SubmissionPipelineCard';
 
 const statusColors: Record<string, string> = {
-    VENDOR_SCREENING: 'bg-yellow-500/10 text-yellow-600',
-    CLIENT_ROUND: 'bg-blue-500/10 text-blue-600',
-    OFFERED: 'bg-green-500/10 text-green-600',
+    SUBMITTED: 'bg-blue-500/10 text-blue-600',
+    OA_SCHEDULED: 'bg-amber-500/10 text-amber-600',
+    OA_PASSED: 'bg-green-500/10 text-green-600',
+    OA_FAILED: 'bg-red-500/10 text-red-600',
+    VENDOR_SCREENING_SCHEDULED: 'bg-amber-500/10 text-amber-600',
+    VENDOR_SCREENING_PASSED: 'bg-green-500/10 text-green-600',
+    VENDOR_SCREENING_FAILED: 'bg-red-500/10 text-red-600',
+    CLIENT_INTERVIEW: 'bg-purple-500/10 text-purple-600',
+    OFFERED: 'bg-emerald-500/10 text-emerald-600',
+    OFFER_ACCEPTED: 'bg-green-500/10 text-green-600',
+    OFFER_DECLINED: 'bg-orange-500/10 text-orange-600',
     PLACED: 'bg-emerald-500/10 text-emerald-600',
     REJECTED: 'bg-red-500/10 text-red-600',
+    WITHDRAWN: 'bg-gray-500/10 text-gray-600',
 };
 
 const statusLabels: Record<string, string> = {
-    VENDOR_SCREENING: 'Vendor Screening',
-    CLIENT_ROUND: 'Client Round',
+    SUBMITTED: 'Submitted',
+    OA_SCHEDULED: 'OA Scheduled',
+    OA_PASSED: 'OA Passed',
+    OA_FAILED: 'OA Failed',
+    VENDOR_SCREENING_SCHEDULED: 'VS Scheduled',
+    VENDOR_SCREENING_PASSED: 'VS Passed',
+    VENDOR_SCREENING_FAILED: 'VS Failed',
+    CLIENT_INTERVIEW: 'Client Interview',
     OFFERED: 'Offered',
+    OFFER_ACCEPTED: 'Offer Accepted',
+    OFFER_DECLINED: 'Offer Declined',
     PLACED: 'Placed',
     REJECTED: 'Rejected',
+    WITHDRAWN: 'Withdrawn',
 };
 
 const allowedTransitions: Record<CandidateStage, CandidateStage[]> = {
@@ -138,7 +157,10 @@ export default function CandidateDetailPage() {
         vendorContact: '',
         positionTitle: '',
         screeningType: 'INTERVIEW' as 'OA' | 'INTERVIEW' | 'DIRECT',
-        notes: ''
+        notes: '',
+        hasOa: false,
+        hasVendorScreening: false,
+        totalRounds: undefined as number | undefined,
     });
 
     useEffect(() => {
@@ -189,11 +211,14 @@ export default function CandidateDetailPage() {
                 positionTitle: submitFormData.positionTitle,
                 screeningType: submitFormData.screeningType,
                 notes: submitFormData.notes,
+                hasOa: submitFormData.hasOa,
+                hasVendorScreening: submitFormData.hasVendorScreening,
+                totalRounds: submitFormData.totalRounds || null,
             });
             const newSubmissions = await submissionsApi.getByCandidate(id);
             setSubmissions(newSubmissions);
             setShowSubmitForm(false);
-            setSubmitFormData({ vendorId: '', clientId: '', vendorContact: '', positionTitle: '', screeningType: 'INTERVIEW', notes: '' });
+            setSubmitFormData({ vendorId: '', clientId: '', vendorContact: '', positionTitle: '', screeningType: 'INTERVIEW', notes: '', hasOa: false, hasVendorScreening: false, totalRounds: undefined });
         } catch (error) {
             console.error('Failed to create submission:', error);
         }
@@ -561,17 +586,37 @@ export default function CandidateDetailPage() {
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium mb-1 block">Screening Type</label>
-                                            <select
-                                                value={submitFormData.screeningType}
-                                                onChange={e => setSubmitFormData({ ...submitFormData, screeningType: e.target.value as 'OA' | 'INTERVIEW' | 'DIRECT' })}
+                                            <label className="text-sm font-medium mb-1 block">Total Interview Rounds</label>
+                                            <input
+                                                type="number"
+                                                min={1}
+                                                max={5}
+                                                value={submitFormData.totalRounds || ''}
+                                                onChange={e => setSubmitFormData({ ...submitFormData, totalRounds: e.target.value ? Number(e.target.value) : undefined })}
                                                 className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                                            >
-                                                <option value="INTERVIEW">Interview</option>
-                                                <option value="OA">Online Assessment</option>
-                                                <option value="DIRECT">Direct</option>
-                                            </select>
+                                                placeholder="e.g., 2"
+                                            />
                                         </div>
+                                    </div>
+                                    <div className="flex gap-6 py-2">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={submitFormData.hasOa || false}
+                                                onChange={e => setSubmitFormData({ ...submitFormData, hasOa: e.target.checked })}
+                                                className="w-4 h-4 rounded"
+                                            />
+                                            <span className="text-sm">Has OA (Online Assessment)</span>
+                                        </label>
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={submitFormData.hasVendorScreening || false}
+                                                onChange={e => setSubmitFormData({ ...submitFormData, hasVendorScreening: e.target.checked })}
+                                                className="w-4 h-4 rounded"
+                                            />
+                                            <span className="text-sm">Has Vendor Screening</span>
+                                        </label>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-1 block">Notes</label>
@@ -604,47 +649,17 @@ export default function CandidateDetailPage() {
                             </CardContent>
                         </Card>
                     ) : (
-                        <Card>
-                            <CardContent className="p-0">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b border-border bg-muted/50">
-                                            <th className="text-left py-3 px-4 text-sm font-medium">Vendor</th>
-                                            <th className="text-left py-3 px-4 text-sm font-medium">Client</th>
-                                            <th className="text-left py-3 px-4 text-sm font-medium">Position</th>
-                                            <th className="text-left py-3 px-4 text-sm font-medium">Status</th>
-                                            <th className="text-left py-3 px-4 text-sm font-medium">Round</th>
-                                            <th className="text-left py-3 px-4 text-sm font-medium">Submitted</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {submissions.map(sub => (
-                                            <tr key={sub.id} className="border-b border-border hover:bg-muted/50">
-                                                <td className="py-3 px-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <Building2 className="w-4 h-4 text-muted-foreground" />
-                                                        <Link href={`/vendors/${sub.vendor.id}`} className="font-medium hover:text-primary">
-                                                            {sub.vendor.companyName}
-                                                        </Link>
-                                                    </div>
-                                                </td>
-                                                <td className="py-3 px-4 text-sm">{sub.client?.companyName || '-'}</td>
-                                                <td className="py-3 px-4 text-sm">{sub.positionTitle}</td>
-                                                <td className="py-3 px-4">
-                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColors[sub.status] || 'bg-muted'}`}>
-                                                        {statusLabels[sub.status] || sub.status}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 px-4 text-sm">{sub.currentRound}</td>
-                                                <td className="py-3 px-4 text-sm text-muted-foreground">
-                                                    {new Date(sub.submittedAt).toLocaleDateString()}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </CardContent>
-                        </Card>
+                        <div className="space-y-3">
+                            {submissions.map(sub => (
+                                <SubmissionPipelineCard
+                                    key={sub.id}
+                                    submission={sub}
+                                    onUpdate={(updated) => {
+                                        setSubmissions(prev => prev.map(s => s.id === updated.id ? updated : s));
+                                    }}
+                                />
+                            ))}
+                        </div>
                     )}
                 </div>
             ) : activeTab === 'profile' ? (
