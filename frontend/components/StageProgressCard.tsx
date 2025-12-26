@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
     ArrowRight, Check, Clock, ChevronRight,
-    AlertCircle, Zap, XCircle, Pause,
+    AlertCircle, Zap, XCircle, Pause, RefreshCw,
     Calendar, BookOpen, FileText, Star, Users, Plus, X, Pencil
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -39,6 +39,8 @@ const SUBSTATUS_WORKFLOWS: Record<CandidateStage, {
     requiresBatch?: boolean;
     requiresMock?: boolean;  // Indicates this status is managed via Mock system
     mockNote?: string;       // Guidance text for mock-managed statuses
+    canRetry?: boolean;      // Indicates this is a failed state that can be retried
+    retryNote?: string;      // Guidance text for retrying
     triggersNext?: boolean;
 }[]> = {
     SOURCING: [
@@ -49,7 +51,7 @@ const SUBSTATUS_WORKFLOWS: Record<CandidateStage, {
         { subStatus: 'TRAINING_CONTRACT_SENT', label: 'Contract Sent', description: 'Training contract sent' },
         { subStatus: 'TRAINING_CONTRACT_SIGNED', label: 'Contract Signed', description: 'Contract signed' },
         { subStatus: 'BATCH_ASSIGNED', label: 'Batch Assigned', description: 'Assigned to batch', requiresBatch: true, triggersNext: true },
-        { subStatus: 'SCREENING_FAILED', label: 'Screening Failed', description: 'Did not pass screening', requiresMock: true },
+        { subStatus: 'SCREENING_FAILED', label: 'Screening Failed', description: 'Did not pass screening', requiresMock: true, canRetry: true, retryNote: 'Schedule another Screening mock to retry' },
         { subStatus: 'DIRECT_MARKETING_READY', label: 'Direct Marketing', description: 'Ready for direct → Marketing', triggersNext: true },
     ],
     TRAINING: [
@@ -63,10 +65,10 @@ const SUBSTATUS_WORKFLOWS: Record<CandidateStage, {
         { subStatus: 'MOCK_THEORY_READY', label: 'Theory Ready', description: 'Ready for theory mock' },
         { subStatus: 'MOCK_THEORY_SCHEDULED', label: 'Theory Scheduled', description: 'Theory mock scheduled', requiresMock: true, mockNote: 'Schedule via Mocks section' },
         { subStatus: 'MOCK_THEORY_PASSED', label: 'Theory Passed', description: 'Passed theory mock', requiresMock: true, mockNote: 'Complete mock feedback to update' },
-        { subStatus: 'MOCK_THEORY_FAILED', label: 'Theory Failed', description: 'Failed theory mock', requiresMock: true },
+        { subStatus: 'MOCK_THEORY_FAILED', label: 'Theory Failed', description: 'Failed theory mock', requiresMock: true, canRetry: true, retryNote: 'Schedule another Theory mock to retry' },
         { subStatus: 'MOCK_REAL_SCHEDULED', label: 'Real Scheduled', description: 'Real mock scheduled', requiresMock: true, mockNote: 'Schedule via Mocks section' },
         { subStatus: 'MOCK_REAL_PASSED', label: 'Real Passed', description: 'Passed real mock → Marketing', requiresMock: true, mockNote: 'Complete mock feedback to update', triggersNext: true },
-        { subStatus: 'MOCK_REAL_FAILED', label: 'Real Failed', description: 'Failed real mock', requiresMock: true },
+        { subStatus: 'MOCK_REAL_FAILED', label: 'Real Failed', description: 'Failed real mock', requiresMock: true, canRetry: true, retryNote: 'Schedule another Real mock to retry' },
     ],
     MARKETING: [],
     OFFERED: [
@@ -98,14 +100,24 @@ const getSubStatusIndex = (stage: CandidateStage, subStatus: CandidateSubStatus)
 };
 
 // Get next recommended actions
-const getNextActions = (stage: CandidateStage, subStatus: CandidateSubStatus): { action: string; label: string; targetSubStatus?: CandidateSubStatus; targetStage?: CandidateStage }[] => {
-    const actions: { action: string; label: string; targetSubStatus?: CandidateSubStatus; targetStage?: CandidateStage }[] = [];
+const getNextActions = (stage: CandidateStage, subStatus: CandidateSubStatus): { action: string; label: string; targetSubStatus?: CandidateSubStatus; targetStage?: CandidateStage; isRetry?: boolean }[] => {
+    const actions: { action: string; label: string; targetSubStatus?: CandidateSubStatus; targetStage?: CandidateStage; isRetry?: boolean }[] = [];
 
     const workflow = SUBSTATUS_WORKFLOWS[stage] || [];
     const currentIndex = getSubStatusIndex(stage, subStatus);
+    const currentSub = workflow.find(s => s.subStatus === subStatus);
 
-    // Suggest next sub-status
-    if (currentIndex >= 0 && currentIndex < workflow.length - 1) {
+    // Check if current status is a failed state that can be retried
+    if (currentSub?.canRetry) {
+        actions.push({
+            action: 'retry',
+            label: currentSub.retryNote || 'Schedule another mock to retry',
+            isRetry: true
+        });
+    }
+
+    // Suggest next sub-status (only if not in failed state)
+    if (!currentSub?.canRetry && currentIndex >= 0 && currentIndex < workflow.length - 1) {
         const nextSub = workflow[currentIndex + 1];
         if (nextSub && !['SCREENING_FAILED', 'MOCK_THEORY_FAILED', 'MOCK_REAL_FAILED', 'OFFER_DECLINED'].includes(nextSub.subStatus)) {
             actions.push({
@@ -449,28 +461,51 @@ export function StageProgressCard({
 
                 {/* Next Actions Panel */}
                 {!isTerminalStage && nextActions.length > 0 && (
-                    <div className="px-4 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                    <div className={cn(
+                        "px-4 py-4",
+                        nextActions.some(a => a.action === 'retry')
+                            ? "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20"
+                            : "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20"
+                    )}>
                         <div className="flex items-center gap-2 mb-3">
-                            <Zap className="w-4 h-4 text-blue-600" />
-                            <span className="text-xs font-semibold text-blue-800 dark:text-blue-200 uppercase tracking-wide">
-                                Recommended Next Step
-                            </span>
+                            {nextActions.some(a => a.action === 'retry') ? (
+                                <>
+                                    <RefreshCw className="w-4 h-4 text-amber-600" />
+                                    <span className="text-xs font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wide">
+                                        Recovery Action
+                                    </span>
+                                </>
+                            ) : (
+                                <>
+                                    <Zap className="w-4 h-4 text-blue-600" />
+                                    <span className="text-xs font-semibold text-blue-800 dark:text-blue-200 uppercase tracking-wide">
+                                        Recommended Next Step
+                                    </span>
+                                </>
+                            )}
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {nextActions.map((action, i) => (
-                                <Button
-                                    key={i}
-                                    size="sm"
-                                    variant={action.action === 'stage' ? 'default' : 'outline'}
-                                    onClick={() => action.action !== 'info' && handleQuickAction(action)}
-                                    disabled={transitioning || updating || action.action === 'info'}
-                                    className={cn(
-                                        action.action === 'info' && "cursor-default opacity-80"
-                                    )}
-                                >
-                                    {action.label}
-                                    {action.action !== 'info' && <ChevronRight className="w-3 h-3 ml-1" />}
-                                </Button>
+                                action.action === 'retry' ? (
+                                    <div key={i} className="flex items-center gap-2 px-3 py-2 bg-amber-100 dark:bg-amber-800/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+                                        <RefreshCw className="w-4 h-4 text-amber-700 dark:text-amber-300" />
+                                        <span className="text-sm text-amber-800 dark:text-amber-200">{action.label}</span>
+                                    </div>
+                                ) : (
+                                    <Button
+                                        key={i}
+                                        size="sm"
+                                        variant={action.action === 'stage' ? 'default' : 'outline'}
+                                        onClick={() => action.action !== 'info' && handleQuickAction(action)}
+                                        disabled={transitioning || updating || action.action === 'info'}
+                                        className={cn(
+                                            action.action === 'info' && "cursor-default opacity-80"
+                                        )}
+                                    >
+                                        {action.label}
+                                        {action.action !== 'info' && <ChevronRight className="w-3 h-3 ml-1" />}
+                                    </Button>
+                                )
                             ))}
                         </div>
                     </div>

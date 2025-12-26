@@ -138,7 +138,8 @@ public class MockService {
             requireStage(candidate, CandidateStage.MOCKING, "Theory mock requires MOCKING stage");
             if (candidate.getSubStatus() != CandidateSubStatus.MOCK_THEORY_READY
                     && candidate.getSubStatus() != CandidateSubStatus.MOCK_THEORY_FAILED) {
-                throw new InvalidTransitionException("MOCK_THEORY_READY or MOCK_THEORY_FAILED is required to schedule theory mock");
+                throw new InvalidTransitionException(
+                        "MOCK_THEORY_READY or MOCK_THEORY_FAILED is required to schedule theory mock");
             }
             candidateService.updateSubStatus(candidate.getId(), CandidateSubStatus.MOCK_THEORY_SCHEDULED,
                     "Theory mock scheduled", null);
@@ -150,8 +151,12 @@ public class MockService {
 
         if (STAGE_REAL.equals(stage)) {
             requireStage(candidate, CandidateStage.MOCKING, "Real mock requires MOCKING stage");
-            if (candidate.getSubStatus() != CandidateSubStatus.MOCK_THEORY_PASSED) {
-                throw new InvalidTransitionException("MOCK_THEORY_PASSED is required to schedule real mock");
+            // Allow scheduling real mock from MOCK_THEORY_PASSED or MOCK_REAL_FAILED
+            // (retry)
+            if (candidate.getSubStatus() != CandidateSubStatus.MOCK_THEORY_PASSED
+                    && candidate.getSubStatus() != CandidateSubStatus.MOCK_REAL_FAILED) {
+                throw new InvalidTransitionException(
+                        "MOCK_THEORY_PASSED or MOCK_REAL_FAILED is required to schedule real mock");
             }
             candidateService.updateSubStatus(candidate.getId(), CandidateSubStatus.MOCK_REAL_SCHEDULED,
                     "Real mock scheduled", null);
@@ -174,7 +179,8 @@ public class MockService {
             if (candidate.getSubStatus() != CandidateSubStatus.SCREENING_SCHEDULED) {
                 throw new InvalidTransitionException("SCREENING_SCHEDULED is required to complete screening mock");
             }
-            CandidateSubStatus next = passed ? CandidateSubStatus.SCREENING_PASSED : CandidateSubStatus.SCREENING_FAILED;
+            CandidateSubStatus next = passed ? CandidateSubStatus.SCREENING_PASSED
+                    : CandidateSubStatus.SCREENING_FAILED;
             candidateService.updateSubStatus(candidate.getId(), next, "Screening mock completed", null);
             candidateService.addTimelineEvent(candidate.getId(), TimelineEventType.MOCK,
                     passed ? "screening_passed" : "screening_failed",
@@ -188,7 +194,8 @@ public class MockService {
             if (candidate.getSubStatus() != CandidateSubStatus.MOCK_THEORY_SCHEDULED) {
                 throw new InvalidTransitionException("MOCK_THEORY_SCHEDULED is required to complete theory mock");
             }
-            CandidateSubStatus next = passed ? CandidateSubStatus.MOCK_THEORY_PASSED : CandidateSubStatus.MOCK_THEORY_FAILED;
+            CandidateSubStatus next = passed ? CandidateSubStatus.MOCK_THEORY_PASSED
+                    : CandidateSubStatus.MOCK_THEORY_FAILED;
             candidateService.updateSubStatus(candidate.getId(), next, "Theory mock completed", null);
             candidateService.addTimelineEvent(candidate.getId(), TimelineEventType.MOCK,
                     passed ? "theory_passed" : "theory_failed",
@@ -202,7 +209,8 @@ public class MockService {
             if (candidate.getSubStatus() != CandidateSubStatus.MOCK_REAL_SCHEDULED) {
                 throw new InvalidTransitionException("MOCK_REAL_SCHEDULED is required to complete real mock");
             }
-            CandidateSubStatus next = passed ? CandidateSubStatus.MOCK_REAL_PASSED : CandidateSubStatus.MOCK_REAL_FAILED;
+            CandidateSubStatus next = passed ? CandidateSubStatus.MOCK_REAL_PASSED
+                    : CandidateSubStatus.MOCK_REAL_FAILED;
             candidateService.updateSubStatus(candidate.getId(), next, "Real mock completed", null);
             candidateService.addTimelineEvent(candidate.getId(), TimelineEventType.MOCK,
                     passed ? "real_passed" : "real_failed",
