@@ -158,6 +158,70 @@ interface StageProgressCardProps {
     onClearError?: () => void;
 }
 
+// Timeline Section Component with expand/collapse
+function TimelineSection({ timeline }: { timeline: TimelineEvent[] }) {
+    const [expanded, setExpanded] = useState(false);
+    const displayCount = expanded ? timeline.length : 5;
+    const hasMore = timeline.length > 5;
+
+    return (
+        <div className="px-4 py-4 border-t bg-slate-50/50 dark:bg-slate-800/30">
+            <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Activity ({timeline.length})
+                    </span>
+                </div>
+                {hasMore && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpanded(!expanded)}
+                        className="text-xs h-6 px-2"
+                    >
+                        {expanded ? 'Show Less' : `Show All (${timeline.length})`}
+                        <ChevronRight className={cn("w-3 h-3 ml-1 transition-transform", expanded && "rotate-90")} />
+                    </Button>
+                )}
+            </div>
+            {timeline.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No events yet</p>
+            ) : (
+                <div className={cn("space-y-2", expanded && "max-h-80 overflow-y-auto pr-2")}>
+                    {timeline.slice(0, displayCount).map((event) => (
+                        <div key={event.id} className="flex items-start gap-2">
+                            <div
+                                className={cn(
+                                    "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white",
+                                    event.eventType === 'STAGE_CHANGED' || event.eventType === 'STAGE_CHANGE' ? 'bg-primary' :
+                                        event.eventType === 'SUBSTATUS_CHANGED' ? 'bg-sky-500' :
+                                            event.eventType === 'CANDIDATE_CREATED' ? 'bg-slate-500' :
+                                                event.eventType === 'BATCH' ? 'bg-purple-500' :
+                                                    event.eventType === 'MOCK' ? 'bg-violet-500' :
+                                                        'bg-slate-400'
+                                )}
+                            >
+                                {(event.eventType === 'STAGE_CHANGED' || event.eventType === 'STAGE_CHANGE') && <ArrowRight className="w-3 h-3" />}
+                                {event.eventType === 'SUBSTATUS_CHANGED' && <Pencil className="w-3 h-3" />}
+                                {event.eventType === 'CANDIDATE_CREATED' && <Plus className="w-3 h-3" />}
+                                {event.eventType === 'BATCH' && <BookOpen className="w-3 h-3" />}
+                                {event.eventType === 'MOCK' && <Star className="w-3 h-3" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate">{event.title}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                    {new Date(event.eventDate).toLocaleDateString()}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export function StageProgressCard({
     candidate,
     timeline,
@@ -567,48 +631,8 @@ export function StageProgressCard({
                     </div>
                 )}
 
-                {/* Recent Timeline (collapsed, showing last 5) */}
-                <div className="px-4 py-4 border-t bg-slate-50/50 dark:bg-slate-800/30">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            Recent Activity
-                        </span>
-                    </div>
-                    {timeline.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">No events yet</p>
-                    ) : (
-                        <div className="space-y-2">
-                            {timeline.slice(0, 5).map((event) => (
-                                <div key={event.id} className="flex items-start gap-2">
-                                    <div
-                                        className={cn(
-                                            "w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-white",
-                                            event.eventType === 'STAGE_CHANGED' || event.eventType === 'STAGE_CHANGE' ? 'bg-primary' :
-                                                event.eventType === 'SUBSTATUS_CHANGED' ? 'bg-sky-500' :
-                                                    event.eventType === 'CANDIDATE_CREATED' ? 'bg-slate-500' :
-                                                        event.eventType === 'BATCH' ? 'bg-purple-500' :
-                                                            event.eventType === 'MOCK' ? 'bg-violet-500' :
-                                                                'bg-slate-400'
-                                        )}
-                                    >
-                                        {(event.eventType === 'STAGE_CHANGED' || event.eventType === 'STAGE_CHANGE') && <ArrowRight className="w-3 h-3" />}
-                                        {event.eventType === 'SUBSTATUS_CHANGED' && <Pencil className="w-3 h-3" />}
-                                        {event.eventType === 'CANDIDATE_CREATED' && <Plus className="w-3 h-3" />}
-                                        {event.eventType === 'BATCH' && <BookOpen className="w-3 h-3" />}
-                                        {event.eventType === 'MOCK' && <Star className="w-3 h-3" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-medium truncate">{event.title}</p>
-                                        <p className="text-[10px] text-muted-foreground">
-                                            {new Date(event.eventDate).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                {/* Timeline Activity (expandable) */}
+                <TimelineSection timeline={timeline} />
             </CardContent>
         </Card>
     );
