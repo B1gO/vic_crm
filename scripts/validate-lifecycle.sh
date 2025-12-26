@@ -89,9 +89,9 @@ echo "Scenario 1: Emma -> TRAINING without batch (should fail)"
 resp=$(request POST "/api/candidates/$emma_id/transition" '{"toStage":"TRAINING","reason":"test"}')
 expect_status "Emma TRAINING without batch" "$resp" "400"
 
-echo "Scenario 2: Nina -> MARKETING without resumeReady (should fail)"
+echo "Scenario 2: Nina TRAINING -> MARKETING (should fail)"
 resp=$(request POST "/api/candidates/$nina_id/transition" '{"toStage":"MARKETING","reason":"test"}')
-expect_status "Nina MARKETING without resumeReady" "$resp" "400"
+expect_status "Nina MARKETING from TRAINING" "$resp" "400"
 
 echo "Scenario 3: Tom reactivation without reason (should fail)"
 resp=$(request POST "/api/candidates/$tom_id/transition" '{"toStage":"SOURCING"}')
@@ -111,17 +111,27 @@ resp=$(request POST "/api/candidates/$emma_id/transition" '{"toStage":"ON_HOLD",
 expect_status "Emma ON_HOLD with fields" "$resp" "200"
 echo "Latest timeline event: $(get_latest_event_type "$emma_id")"
 
-echo "Scenario 7: Mingkai MARKETING -> INTERVIEWING -> OFFERED"
-resp=$(request POST "/api/candidates/$mingkai_id/transition" '{"toStage":"INTERVIEWING","reason":"Start interviews"}')
-expect_status "Mingkai INTERVIEWING" "$resp" "200"
-resp=$(request POST "/api/candidates/$mingkai_id/transition" '{"toStage":"OFFERED","reason":"Offer received","offerDate":"2026-02-01"}')
+echo "Scenario 7: Nina TRAINING -> MOCKING, then MOCKING -> MARKETING (should fail)"
+resp=$(request POST "/api/candidates/$nina_id/transition" '{"toStage":"MOCKING","reason":"Batch ended"}')
+expect_status "Nina MOCKING" "$resp" "200"
+resp=$(request POST "/api/candidates/$nina_id/transition" '{"toStage":"MARKETING","reason":"test"}')
+expect_status "Nina MARKETING without real mock pass" "$resp" "400"
+
+echo "Scenario 8: Nina set MOCK_REAL_PASSED then MOCKING -> MARKETING (should pass)"
+resp=$(request POST "/api/candidates/$nina_id/substatus" '{"subStatus":"MOCK_REAL_PASSED","reason":"QA override"}')
+expect_status "Nina substatus MOCK_REAL_PASSED" "$resp" "200"
+resp=$(request POST "/api/candidates/$nina_id/transition" '{"toStage":"MARKETING","reason":"Real mock passed"}')
+expect_status "Nina MARKETING after real pass" "$resp" "200"
+
+echo "Scenario 9: Mingkai MARKETING -> OFFERED"
+resp=$(request POST "/api/candidates/$mingkai_id/transition" '{"toStage":"OFFERED","reason":"Offer received","offerType":"W2","offerDate":"2026-02-01"}')
 expect_status "Mingkai OFFERED" "$resp" "200"
 
-echo "Scenario 8: Mingkai -> PLACED missing startDate (should fail)"
+echo "Scenario 10: Mingkai -> PLACED missing startDate (should fail)"
 resp=$(request POST "/api/candidates/$mingkai_id/transition" '{"toStage":"PLACED","reason":"Placed"}')
 expect_status "Mingkai PLACED missing startDate" "$resp" "400"
 
-echo "Scenario 9: Mingkai -> PLACED with startDate (should pass)"
+echo "Scenario 11: Mingkai -> PLACED with startDate (should pass)"
 resp=$(request POST "/api/candidates/$mingkai_id/transition" '{"toStage":"PLACED","startDate":"2026-03-01","reason":"Placed"}')
 expect_status "Mingkai PLACED with startDate" "$resp" "200"
 echo "Latest timeline event: $(get_latest_event_type "$mingkai_id")"

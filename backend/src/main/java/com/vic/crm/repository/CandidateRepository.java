@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface CandidateRepository extends JpaRepository<Candidate, Long> {
     List<Candidate> findByStage(CandidateStage stage);
+    List<Candidate> findByBatchId(Long batchId);
 }

@@ -3,6 +3,7 @@ package com.vic.crm.entity;
 import com.vic.crm.enums.CandidateStage;
 import com.vic.crm.enums.CandidateSubStatus;
 import com.vic.crm.enums.CloseReason;
+import com.vic.crm.enums.OfferType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -81,6 +82,8 @@ public class Candidate {
     private String reactivateReason;
 
     // Offer and placement dates
+    @Enumerated(EnumType.STRING)
+    private OfferType offerType;
     private LocalDate offerDate;
     private LocalDate startDate;
 

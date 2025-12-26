@@ -20,14 +20,19 @@ const subStatusLabels: Partial<Record<CandidateSubStatus, string>> = {
     SCREENING_SCHEDULED: 'Screening',
     SCREENING_PASSED: 'Passed',
     SCREENING_FAILED: 'Failed',
+    TRAINING_CONTRACT_SENT: 'Contract Sent',
+    TRAINING_CONTRACT_SIGNED: 'Contract Signed',
+    BATCH_ASSIGNED: 'Batch Assigned',
     DIRECT_MARKETING_READY: 'Direct Mkt',
     IN_TRAINING: 'In Training',
-    TRAINING_COMPLETED: 'Training Done',
-    RESUME_READY: 'Resume Ready',
-    VENDOR_OUTREACH: 'Vendor Outreach',
-    SUBMITTED: 'Submitted',
-    VENDOR_SCREEN: 'Vendor Screen',
-    CLIENT_ROUND_1: 'Client R1',
+    MOCK_THEORY_READY: 'Theory Ready',
+    MOCK_THEORY_SCHEDULED: 'Theory Scheduled',
+    MOCK_THEORY_PASSED: 'Theory Passed',
+    MOCK_THEORY_FAILED: 'Theory Failed',
+    MOCK_REAL_SCHEDULED: 'Real Scheduled',
+    MOCK_REAL_PASSED: 'Real Passed',
+    MOCK_REAL_FAILED: 'Real Failed',
+    MARKETING_ACTIVE: 'Marketing',
     OFFER_PENDING: 'Offer Pending',
     OFFER_ACCEPTED: 'Offer Accepted',
     OFFER_DECLINED: 'Offer Declined',
@@ -42,14 +47,19 @@ const subStatusColors: Partial<Record<CandidateSubStatus, string>> = {
     SCREENING_SCHEDULED: 'bg-blue-500/20 text-blue-400',
     SCREENING_PASSED: 'bg-green-500/20 text-green-400',
     SCREENING_FAILED: 'bg-red-500/20 text-red-400',
+    TRAINING_CONTRACT_SENT: 'bg-indigo-500/20 text-indigo-400',
+    TRAINING_CONTRACT_SIGNED: 'bg-indigo-600/20 text-indigo-500',
+    BATCH_ASSIGNED: 'bg-purple-500/20 text-purple-400',
     DIRECT_MARKETING_READY: 'bg-purple-500/20 text-purple-400',
     IN_TRAINING: 'bg-amber-500/20 text-amber-500',
-    TRAINING_COMPLETED: 'bg-emerald-500/20 text-emerald-500',
-    RESUME_READY: 'bg-emerald-500/20 text-emerald-500',
-    VENDOR_OUTREACH: 'bg-cyan-500/20 text-cyan-500',
-    SUBMITTED: 'bg-indigo-500/20 text-indigo-500',
-    VENDOR_SCREEN: 'bg-blue-500/20 text-blue-500',
-    CLIENT_ROUND_1: 'bg-sky-500/20 text-sky-500',
+    MOCK_THEORY_READY: 'bg-violet-500/20 text-violet-500',
+    MOCK_THEORY_SCHEDULED: 'bg-violet-500/20 text-violet-500',
+    MOCK_THEORY_PASSED: 'bg-green-500/20 text-green-500',
+    MOCK_THEORY_FAILED: 'bg-red-500/20 text-red-500',
+    MOCK_REAL_SCHEDULED: 'bg-blue-500/20 text-blue-500',
+    MOCK_REAL_PASSED: 'bg-emerald-500/20 text-emerald-500',
+    MOCK_REAL_FAILED: 'bg-rose-500/20 text-rose-500',
+    MARKETING_ACTIVE: 'bg-emerald-500/20 text-emerald-500',
     OFFER_PENDING: 'bg-lime-500/20 text-lime-500',
     OFFER_ACCEPTED: 'bg-green-600/20 text-green-600',
     OFFER_DECLINED: 'bg-rose-500/20 text-rose-500',
@@ -95,10 +105,12 @@ export function CandidateTable({ candidates, emptyMessage = 'No candidates yet' 
                             </Link>
                         </td>
                         <td className="p-4">
-                            {candidate.subStatus && (
+                            {candidate.subStatus && !(candidate.stage === 'MARKETING' && candidate.subStatus === 'MARKETING_ACTIVE') ? (
                                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${subStatusColors[candidate.subStatus] || 'bg-gray-500/20 text-gray-400'}`}>
                                     {subStatusLabels[candidate.subStatus] || candidate.subStatus.replace(/_/g, ' ')}
                                 </span>
+                            ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
                             )}
                         </td>
                         <td className="p-4">

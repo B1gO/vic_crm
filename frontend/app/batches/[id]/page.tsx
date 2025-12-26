@@ -5,8 +5,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { batchesApi, candidatesApi, Batch, Candidate } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { CandidateTable } from '@/components/CandidateTable';
-import { ArrowLeft, Calendar, Users, BarChart3, Search } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, BarChart3, Search, Play, Square } from 'lucide-react';
 
 export default function BatchDetailPage() {
     const params = useParams();
@@ -14,6 +15,7 @@ export default function BatchDetailPage() {
     const [batch, setBatch] = useState<Batch | null>(null);
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<'start' | 'end' | null>(null);
     const [search, setSearch] = useState('');
 
     useEffect(() => {
@@ -37,6 +39,30 @@ export default function BatchDetailPage() {
         }
     };
 
+    const handleStartBatch = async () => {
+        setActionLoading('start');
+        try {
+            await batchesApi.start(batchId);
+            await loadData();
+        } catch (error) {
+            console.error('Failed to start batch:', error);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleEndBatch = async () => {
+        setActionLoading('end');
+        try {
+            await batchesApi.end(batchId);
+            await loadData();
+        } catch (error) {
+            console.error('Failed to end batch:', error);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     if (loading) {
         return <div className="text-muted-foreground">Loading...</div>;
     }
@@ -48,22 +74,34 @@ export default function BatchDetailPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <Link href="/batches" className="p-2 hover:bg-muted rounded-lg transition-colors">
-                    <ArrowLeft className="w-5 h-5" />
-                </Link>
-                <div>
-                    <h1 className="text-2xl font-bold">{batch.name}</h1>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                        <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {batch.startDate ? new Date(batch.startDate).toLocaleDateString() : '-'} - {batch.endDate ? new Date(batch.endDate).toLocaleDateString() : '-'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                            <Users className="w-4 h-4" />
-                            {candidates.length} candidates
-                        </span>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                    <Link href="/batches" className="p-2 hover:bg-muted rounded-lg transition-colors">
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                    <div>
+                        <h1 className="text-2xl font-bold">{batch.name}</h1>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {batch.startDate ? new Date(batch.startDate).toLocaleDateString() : '-'} - {batch.endDate ? new Date(batch.endDate).toLocaleDateString() : '-'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <Users className="w-4 h-4" />
+                                {candidates.length} candidates
+                            </span>
+                        </div>
                     </div>
+                </div>
+                <div className="flex gap-2">
+                    <Button onClick={handleStartBatch} disabled={actionLoading !== null}>
+                        <Play className="w-4 h-4 mr-2" />
+                        {actionLoading === 'start' ? 'Starting...' : 'Start Batch'}
+                    </Button>
+                    <Button variant="outline" onClick={handleEndBatch} disabled={actionLoading !== null}>
+                        <Square className="w-4 h-4 mr-2" />
+                        {actionLoading === 'end' ? 'Ending...' : 'End Batch'}
+                    </Button>
                 </div>
             </div>
 

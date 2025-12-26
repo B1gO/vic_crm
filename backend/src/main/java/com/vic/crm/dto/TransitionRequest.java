@@ -3,6 +3,7 @@ package com.vic.crm.dto;
 import com.vic.crm.enums.CandidateStage;
 import com.vic.crm.enums.CandidateSubStatus;
 import com.vic.crm.enums.CloseReason;
+import com.vic.crm.enums.OfferType;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -18,6 +19,7 @@ public class TransitionRequest {
     private String holdReason;
     private LocalDateTime nextFollowUpAt;
     private String reactivateReason;
+    private OfferType offerType;
     private LocalDate offerDate;
     private LocalDate startDate;
     private Long actorId;

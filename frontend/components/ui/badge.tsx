@@ -28,8 +28,8 @@ export function Badge({ children, variant = 'default', className }: BadgeProps) 
 const stageStyles: Record<CandidateStage, string> = {
     SOURCING: "bg-blue-100 text-blue-800",
     TRAINING: "bg-amber-100 text-amber-800",
+    MOCKING: "bg-violet-100 text-violet-800",
     MARKETING: "bg-emerald-100 text-emerald-800",
-    INTERVIEWING: "bg-sky-100 text-sky-800",
     OFFERED: "bg-lime-100 text-lime-800",
     PLACED: "bg-indigo-100 text-indigo-800",
     ELIMINATED: "bg-red-100 text-red-800",
@@ -40,8 +40,8 @@ const stageStyles: Record<CandidateStage, string> = {
 const stageLabels: Record<CandidateStage, string> = {
     SOURCING: "Sourcing",
     TRAINING: "Training",
+    MOCKING: "Mocking",
     MARKETING: "Marketing",
-    INTERVIEWING: "Interviewing",
     OFFERED: "Offered",
     PLACED: "Placed",
     ELIMINATED: "Eliminated",

@@ -6,8 +6,8 @@ package com.vic.crm.enums;
 public enum CandidateStage {
     SOURCING,
     TRAINING,
+    MOCKING,
     MARKETING,
-    INTERVIEWING,
     OFFERED,
     PLACED,
     ELIMINATED,

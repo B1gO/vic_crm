@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch } from '@/lib/api';
+import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
@@ -28,21 +28,51 @@ const statusLabels: Record<string, string> = {
 
 const allowedTransitions: Record<CandidateStage, CandidateStage[]> = {
     SOURCING: ['TRAINING', 'MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
-    TRAINING: ['MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
-    MARKETING: ['INTERVIEWING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
-    INTERVIEWING: ['OFFERED', 'MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
-    OFFERED: ['PLACED', 'INTERVIEWING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    TRAINING: ['MOCKING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    MOCKING: ['MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    MARKETING: ['OFFERED', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    OFFERED: ['PLACED', 'MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
     PLACED: ['MARKETING', 'ELIMINATED', 'WITHDRAWN'],
-    ELIMINATED: ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'],
-    WITHDRAWN: ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'],
-    ON_HOLD: ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'],
+    ELIMINATED: ['SOURCING', 'TRAINING', 'MOCKING', 'MARKETING', 'OFFERED'],
+    WITHDRAWN: ['SOURCING', 'TRAINING', 'MOCKING', 'MARKETING', 'OFFERED'],
+    ON_HOLD: ['SOURCING', 'TRAINING', 'MOCKING', 'MARKETING', 'OFFERED'],
 };
 
+const stageOrder: CandidateStage[] = [
+    'SOURCING',
+    'TRAINING',
+    'MOCKING',
+    'MARKETING',
+    'OFFERED',
+    'PLACED',
+    'ON_HOLD',
+    'ELIMINATED',
+    'WITHDRAWN',
+];
+
 const subStatusOptionsByStage: Record<CandidateStage, CandidateSubStatus[]> = {
-    SOURCING: ['SOURCED', 'CONTACTED', 'SCREENING_SCHEDULED', 'SCREENING_PASSED', 'SCREENING_FAILED', 'DIRECT_MARKETING_READY'],
-    TRAINING: ['IN_TRAINING', 'HOMEWORK_PENDING', 'MOCK_IN_PROGRESS', 'TRAINING_COMPLETED'],
-    MARKETING: ['RESUME_READY', 'PROFILE_PACKAGED', 'VENDOR_OUTREACH', 'SUBMITTED'],
-    INTERVIEWING: ['VENDOR_SCREEN', 'CLIENT_ROUND_1', 'CLIENT_ROUND_2', 'CLIENT_ROUND_3_PLUS'],
+    SOURCING: [
+        'SOURCED',
+        'CONTACTED',
+        'SCREENING_SCHEDULED',
+        'SCREENING_PASSED',
+        'SCREENING_FAILED',
+        'TRAINING_CONTRACT_SENT',
+        'TRAINING_CONTRACT_SIGNED',
+        'BATCH_ASSIGNED',
+        'DIRECT_MARKETING_READY',
+    ],
+    TRAINING: ['IN_TRAINING'],
+    MOCKING: [
+        'MOCK_THEORY_READY',
+        'MOCK_THEORY_SCHEDULED',
+        'MOCK_THEORY_PASSED',
+        'MOCK_THEORY_FAILED',
+        'MOCK_REAL_SCHEDULED',
+        'MOCK_REAL_PASSED',
+        'MOCK_REAL_FAILED',
+    ],
+    MARKETING: [],
     OFFERED: ['OFFER_PENDING', 'OFFER_ACCEPTED', 'OFFER_DECLINED'],
     ON_HOLD: ['WAITING_DOCS', 'PERSONAL_PAUSE', 'VISA_ISSUE', 'OTHER'],
     PLACED: ['PLACED_CONFIRMED'],
@@ -68,6 +98,8 @@ const closeReasonOptions: CloseReason[] = [
     'NO_RESPONSE'
 ];
 
+const offerTypeOptions: OfferType[] = ['W2', 'C2C'];
+
 export default function CandidateDetailPage() {
     const params = useParams();
     const id = Number(params.id);
@@ -91,6 +123,7 @@ export default function CandidateDetailPage() {
     const [uploadForm, setUploadForm] = useState({ documentType: 'RESUME' as DocumentType, notes: '', file: null as File | null });
     const [showEditProfile, setShowEditProfile] = useState(false);
     const [batches, setBatches] = useState<Batch[]>([]);
+    const [selectedStage, setSelectedStage] = useState<CandidateStage | null>(null);
     const [selectedSubStatus, setSelectedSubStatus] = useState<CandidateSubStatus | ''>('');
     const [subStatusReason, setSubStatusReason] = useState('');
     const [subStatusUpdating, setSubStatusUpdating] = useState(false);
@@ -135,6 +168,7 @@ export default function CandidateDetailPage() {
 
     useEffect(() => {
         if (candidate) {
+            setSelectedStage(candidate.stage);
             setSelectedSubStatus(candidate.subStatus);
         }
     }, [candidate]);
@@ -187,6 +221,17 @@ export default function CandidateDetailPage() {
         return normalized as CloseReason;
     };
 
+    const requireOfferType = () => {
+        const value = promptValue(`Offer type (${offerTypeOptions.join(', ')}):`);
+        if (!value) return null;
+        const normalized = value.toUpperCase().replace(/\s+/g, '');
+        if (!offerTypeOptions.includes(normalized as OfferType)) {
+            alert('Invalid offerType. Use W2 or C2C.');
+            return null;
+        }
+        return normalized as OfferType;
+    };
+
     const handleTransition = async (toStage: CandidateStage) => {
         if (!candidate) return;
         setTransitionError(null);
@@ -198,6 +243,7 @@ export default function CandidateDetailPage() {
             holdReason?: string;
             nextFollowUpAt?: string;
             reactivateReason?: string;
+            offerType?: OfferType;
             startDate?: string;
         } = { toStage, reason: `Moved to ${toStage}` };
 
@@ -227,8 +273,14 @@ export default function CandidateDetailPage() {
             payload.startDate = startDate;
         }
 
+        if (toStage === 'OFFERED') {
+            const offerType = requireOfferType();
+            if (!offerType) return;
+            payload.offerType = offerType;
+        }
+
         if ((candidate.stage === 'ELIMINATED' || candidate.stage === 'WITHDRAWN')
-            && ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'].includes(toStage)) {
+            && ['SOURCING', 'TRAINING', 'MOCKING', 'MARKETING', 'OFFERED'].includes(toStage)) {
             const reactivateReason = promptValue('Reactivate reason:');
             if (!reactivateReason) return;
             payload.reactivateReason = reactivateReason;
@@ -242,14 +294,8 @@ export default function CandidateDetailPage() {
             payload.reason = reason;
         }
 
-        if (candidate.stage === 'INTERVIEWING' && toStage === 'MARKETING') {
+        if (candidate.stage === 'OFFERED' && toStage === 'MARKETING') {
             const reason = requireReason('Reason to return to marketing:');
-            if (!reason) return;
-            payload.reason = reason;
-        }
-
-        if (candidate.stage === 'OFFERED' && toStage === 'INTERVIEWING') {
-            const reason = requireReason('Reason to return to interviewing:');
             if (!reason) return;
             payload.reason = reason;
         }
@@ -275,7 +321,7 @@ export default function CandidateDetailPage() {
     };
 
     const handleSubStatusUpdate = async () => {
-        if (!candidate || !selectedSubStatus) return;
+        if (!candidate || !selectedSubStatus || selectedStage !== candidate.stage) return;
         setTransitionError(null);
         setSubStatusUpdating(true);
         try {
@@ -304,6 +350,9 @@ export default function CandidateDetailPage() {
     }
 
     const nextStages = allowedTransitions[candidate.stage];
+    const activeStage = selectedStage ?? candidate.stage;
+    const activeSubStatusOptions = subStatusOptionsByStage[activeStage] || [];
+    const isCurrentStageSelected = activeStage === candidate.stage;
 
     return (
         <div className="space-y-6">
@@ -466,32 +515,94 @@ export default function CandidateDetailPage() {
                             </div>
                             <div className="pt-3 border-t space-y-2">
                                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                    Sub-status
+                                    Stage / Sub-status
                                 </label>
-                                <select
-                                    value={selectedSubStatus}
-                                    onChange={e => setSelectedSubStatus(e.target.value as CandidateSubStatus)}
-                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                                >
-                                    {(subStatusOptionsByStage[candidate.stage] || []).map(option => (
-                                        <option key={option} value={option}>
-                                            {option.replace(/_/g, ' ')}
-                                        </option>
-                                    ))}
-                                </select>
-                                <input
-                                    value={subStatusReason}
-                                    onChange={e => setSubStatusReason(e.target.value)}
-                                    placeholder="Reason (optional)"
-                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                                />
-                                <Button
-                                    variant="outline"
-                                    onClick={handleSubStatusUpdate}
-                                    disabled={subStatusUpdating || selectedSubStatus === candidate.subStatus}
-                                >
-                                    Update Sub-status
-                                </Button>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <div className="space-y-2">
+                                        {stageOrder.map(stage => (
+                                            <button
+                                                key={stage}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedStage(stage);
+                                                    if (stage === candidate.stage) {
+                                                        setSelectedSubStatus(candidate.subStatus);
+                                                    }
+                                                }}
+                                                className={cn(
+                                                    "w-full text-left px-3 py-2 rounded-lg border text-sm transition",
+                                                    stage === activeStage
+                                                        ? "border-primary bg-primary/5 text-foreground"
+                                                        : "border-border text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                {stage.replace(/_/g, ' ')}
+                                                {stage === candidate.stage && (
+                                                    <span className="ml-2 text-[11px] text-primary">Current</span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="space-y-2">
+                                        {activeSubStatusOptions.length === 0 ? (
+                                            <div className="rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
+                                                Sub-status in Marketing is driven by submissions.
+                                            </div>
+                                        ) : (
+                                            activeSubStatusOptions.map(option => {
+                                                const isSelected = isCurrentStageSelected && option === selectedSubStatus;
+                                                return (
+                                                    <button
+                                                        key={option}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (isCurrentStageSelected) {
+                                                                setSelectedSubStatus(option);
+                                                            }
+                                                        }}
+                                                        disabled={!isCurrentStageSelected}
+                                                        className={cn(
+                                                            "w-full text-left px-3 py-2 rounded-lg border text-sm transition",
+                                                            isSelected
+                                                                ? "border-primary bg-primary/5 text-foreground"
+                                                                : "border-border text-muted-foreground",
+                                                            !isCurrentStageSelected && "cursor-not-allowed opacity-60"
+                                                        )}
+                                                    >
+                                                        {option.replace(/_/g, ' ')}
+                                                    </button>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
+                                {activeSubStatusOptions.length > 0 ? (
+                                    isCurrentStageSelected ? (
+                                        <>
+                                            <input
+                                                value={subStatusReason}
+                                                onChange={e => setSubStatusReason(e.target.value)}
+                                                placeholder="Reason (optional)"
+                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                            />
+                                            <Button
+                                                variant="outline"
+                                                onClick={handleSubStatusUpdate}
+                                                disabled={subStatusUpdating || selectedSubStatus === candidate.subStatus}
+                                            >
+                                                Update Sub-status
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <p className="text-xs text-muted-foreground">
+                                            Select the current stage to update sub-status.
+                                        </p>
+                                    )
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">
+                                        No editable sub-status for this stage.
+                                    </p>
+                                )}
                             </div>
 
                             {nextStages.length > 0 && (
@@ -538,9 +649,10 @@ export default function CandidateDetailPage() {
                                                     t.eventType === 'CANDIDATE_CREATED' ? 'bg-slate-500' :
                                                         t.eventType === 'ON_HOLD' ? 'bg-gray-500' :
                                                             t.eventType === 'ELIMINATED' || t.eventType === 'WITHDRAWN' || t.eventType === 'CLOSED' ? 'bg-red-500' :
-                                                                t.eventType === 'PLACED' ? 'bg-indigo-500' :
-                                                                    t.eventType === 'OFFERED' ? 'bg-lime-500' :
-                                                                        t.eventType === 'CONTRACT' ? 'bg-emerald-500' :
+                                                            t.eventType === 'PLACED' ? 'bg-indigo-500' :
+                                                                t.eventType === 'OFFERED' ? 'bg-lime-500' :
+                                                                    t.eventType === 'CONTRACT' ? 'bg-emerald-500' :
+                                                                        t.eventType === 'MOCK' ? 'bg-violet-500' :
                                                                             t.eventType === 'BATCH' ? 'bg-purple-500' :
                                                                                 t.eventType === 'COMMUNICATION' ? 'bg-blue-500' : 'bg-slate-400'
                                             )}>
@@ -552,6 +664,7 @@ export default function CandidateDetailPage() {
                                                 {t.eventType === 'OFFERED' && <FileText className="w-3 h-3" />}
                                                 {t.eventType === 'PLACED' && <Check className="w-3 h-3" />}
                                                 {t.eventType === 'CONTRACT' && <FileText className="w-3 h-3" />}
+                                                {t.eventType === 'MOCK' && <Star className="w-3 h-3" />}
                                                 {t.eventType === 'BATCH' && <BookOpen className="w-3 h-3" />}
                                                 {t.eventType === 'COMMUNICATION' && <Users className="w-3 h-3" />}
                                             </div>

@@ -6,8 +6,8 @@
 export type CandidateStage =
     | 'SOURCING'
     | 'TRAINING'
+    | 'MOCKING'
     | 'MARKETING'
-    | 'INTERVIEWING'
     | 'OFFERED'
     | 'PLACED'
     | 'ELIMINATED'
@@ -20,19 +20,19 @@ export type CandidateSubStatus =
     | 'SCREENING_SCHEDULED'
     | 'SCREENING_PASSED'
     | 'SCREENING_FAILED'
+    | 'TRAINING_CONTRACT_SENT'
+    | 'TRAINING_CONTRACT_SIGNED'
+    | 'BATCH_ASSIGNED'
     | 'DIRECT_MARKETING_READY'
     | 'IN_TRAINING'
-    | 'HOMEWORK_PENDING'
-    | 'MOCK_IN_PROGRESS'
-    | 'TRAINING_COMPLETED'
-    | 'RESUME_READY'
-    | 'PROFILE_PACKAGED'
-    | 'VENDOR_OUTREACH'
-    | 'SUBMITTED'
-    | 'VENDOR_SCREEN'
-    | 'CLIENT_ROUND_1'
-    | 'CLIENT_ROUND_2'
-    | 'CLIENT_ROUND_3_PLUS'
+    | 'MOCK_THEORY_READY'
+    | 'MOCK_THEORY_SCHEDULED'
+    | 'MOCK_THEORY_PASSED'
+    | 'MOCK_THEORY_FAILED'
+    | 'MOCK_REAL_SCHEDULED'
+    | 'MOCK_REAL_PASSED'
+    | 'MOCK_REAL_FAILED'
+    | 'MARKETING_ACTIVE'
     | 'OFFER_PENDING'
     | 'OFFER_ACCEPTED'
     | 'OFFER_DECLINED'
@@ -79,6 +79,8 @@ export type CloseReason =
     | 'NO_HOMEWORK'
     | 'BEHAVIOR_ISSUE'
     | 'NO_RESPONSE';
+
+export type OfferType = 'W2' | 'C2C';
 
 export type SubmissionStatus = 'VENDOR_SCREENING' | 'CLIENT_ROUND' | 'OFFERED' | 'PLACED' | 'REJECTED';
 export type ScreeningType = 'OA' | 'INTERVIEW' | 'DIRECT';
@@ -160,6 +162,7 @@ export interface Candidate {
     closeReasonNote: string | null;
     withdrawReason: string | null;
     reactivateReason: string | null;
+    offerType: OfferType | null;
     offerDate: string | null;
     startDate: string | null;
     batch: Batch | null;

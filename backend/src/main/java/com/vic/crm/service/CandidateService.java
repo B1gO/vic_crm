@@ -30,43 +30,44 @@ public class CandidateService {
     private static final Set<CandidateStage> NON_TERMINAL_STAGES = Set.of(
             CandidateStage.SOURCING,
             CandidateStage.TRAINING,
+            CandidateStage.MOCKING,
             CandidateStage.MARKETING,
-            CandidateStage.INTERVIEWING,
             CandidateStage.OFFERED);
 
     private static final Map<CandidateStage, Set<CandidateStage>> ALLOWED_TRANSITIONS = Map.of(
             CandidateStage.SOURCING, Set.of(CandidateStage.TRAINING, CandidateStage.MARKETING,
                     CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
-            CandidateStage.TRAINING, Set.of(CandidateStage.MARKETING, CandidateStage.ELIMINATED,
+            CandidateStage.TRAINING, Set.of(CandidateStage.MOCKING, CandidateStage.ELIMINATED,
                     CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
-            CandidateStage.MARKETING, Set.of(CandidateStage.INTERVIEWING, CandidateStage.ELIMINATED,
+            CandidateStage.MOCKING, Set.of(CandidateStage.MARKETING, CandidateStage.ELIMINATED,
                     CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
-            CandidateStage.INTERVIEWING, Set.of(CandidateStage.OFFERED, CandidateStage.MARKETING,
-                    CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
-            CandidateStage.OFFERED, Set.of(CandidateStage.PLACED, CandidateStage.INTERVIEWING,
+            CandidateStage.MARKETING, Set.of(CandidateStage.OFFERED, CandidateStage.ELIMINATED,
+                    CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
+            CandidateStage.OFFERED, Set.of(CandidateStage.PLACED, CandidateStage.MARKETING,
                     CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
             CandidateStage.PLACED, Set.of(CandidateStage.MARKETING, CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN),
             CandidateStage.ELIMINATED, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
-                    CandidateStage.MARKETING, CandidateStage.INTERVIEWING, CandidateStage.OFFERED),
+                    CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED),
             CandidateStage.WITHDRAWN, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
-                    CandidateStage.MARKETING, CandidateStage.INTERVIEWING, CandidateStage.OFFERED),
+                    CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED),
             CandidateStage.ON_HOLD, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
-                    CandidateStage.MARKETING, CandidateStage.INTERVIEWING, CandidateStage.OFFERED));
+                    CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED));
 
     private static final Map<CandidateStage, Set<CandidateSubStatus>> SUB_STATUS_BY_STAGE = Map.of(
             CandidateStage.SOURCING, Set.of(
                     CandidateSubStatus.SOURCED, CandidateSubStatus.CONTACTED, CandidateSubStatus.SCREENING_SCHEDULED,
                     CandidateSubStatus.SCREENING_PASSED, CandidateSubStatus.SCREENING_FAILED,
+                    CandidateSubStatus.TRAINING_CONTRACT_SENT, CandidateSubStatus.TRAINING_CONTRACT_SIGNED,
+                    CandidateSubStatus.BATCH_ASSIGNED,
                     CandidateSubStatus.DIRECT_MARKETING_READY),
             CandidateStage.TRAINING, Set.of(
-                    CandidateSubStatus.IN_TRAINING, CandidateSubStatus.HOMEWORK_PENDING,
-                    CandidateSubStatus.MOCK_IN_PROGRESS, CandidateSubStatus.TRAINING_COMPLETED),
-            CandidateStage.MARKETING, Set.of(
-                    CandidateSubStatus.RESUME_READY, CandidateSubStatus.PROFILE_PACKAGED,
-                    CandidateSubStatus.VENDOR_OUTREACH, CandidateSubStatus.SUBMITTED),
-            CandidateStage.INTERVIEWING, Set.of(
-                    CandidateSubStatus.VENDOR_SCREEN, CandidateSubStatus.CLIENT_ROUND_1,
-                    CandidateSubStatus.CLIENT_ROUND_2, CandidateSubStatus.CLIENT_ROUND_3_PLUS),
+                    CandidateSubStatus.IN_TRAINING),
+            CandidateStage.MOCKING, Set.of(
+                    CandidateSubStatus.MOCK_THEORY_READY, CandidateSubStatus.MOCK_THEORY_SCHEDULED,
+                    CandidateSubStatus.MOCK_THEORY_PASSED, CandidateSubStatus.MOCK_THEORY_FAILED,
+                    CandidateSubStatus.MOCK_REAL_SCHEDULED, CandidateSubStatus.MOCK_REAL_PASSED,
+                    CandidateSubStatus.MOCK_REAL_FAILED),
+            CandidateStage.MARKETING, Set.of(CandidateSubStatus.MARKETING_ACTIVE),
             CandidateStage.OFFERED, Set.of(
                     CandidateSubStatus.OFFER_PENDING, CandidateSubStatus.OFFER_ACCEPTED,
                     CandidateSubStatus.OFFER_DECLINED),
@@ -80,8 +81,8 @@ public class CandidateService {
     private static final Map<CandidateStage, CandidateSubStatus> DEFAULT_SUB_STATUS = Map.of(
             CandidateStage.SOURCING, CandidateSubStatus.SOURCED,
             CandidateStage.TRAINING, CandidateSubStatus.IN_TRAINING,
-            CandidateStage.MARKETING, CandidateSubStatus.RESUME_READY,
-            CandidateStage.INTERVIEWING, CandidateSubStatus.VENDOR_SCREEN,
+            CandidateStage.MOCKING, CandidateSubStatus.MOCK_THEORY_READY,
+            CandidateStage.MARKETING, CandidateSubStatus.MARKETING_ACTIVE,
             CandidateStage.OFFERED, CandidateSubStatus.OFFER_PENDING,
             CandidateStage.ON_HOLD, CandidateSubStatus.OTHER,
             CandidateStage.PLACED, CandidateSubStatus.PLACED_CONFIRMED,
@@ -118,12 +119,27 @@ public class CandidateService {
         createTimelineEvent(saved, TimelineEventType.CANDIDATE_CREATED, "Candidate Created",
                 "Candidate record created.", null, null, null, saved.getSubStatus(), null, null, null, null);
 
+        if (saved.getStage() == CandidateStage.SOURCING
+                && saved.getBatch() != null
+                && saved.getSubStatus() != CandidateSubStatus.BATCH_ASSIGNED) {
+            saved.setSubStatus(CandidateSubStatus.BATCH_ASSIGNED);
+            saved = candidateRepository.save(saved);
+            String batchLabel = saved.getBatch().getName() != null
+                    ? saved.getBatch().getName()
+                    : String.valueOf(saved.getBatch().getId());
+            createTimelineEvent(saved, TimelineEventType.BATCH, "Batch Assigned",
+                    String.format("Assigned to batch %s.", batchLabel),
+                    saved.getStage(), saved.getStage(), "batch_assigned", saved.getSubStatus(),
+                    null, null, null, null);
+        }
+
         return saved;
     }
 
     @Transactional
     public Candidate update(Long id, Candidate updated) {
         Candidate existing = findById(id);
+        Batch previousBatch = existing.getBatch();
         existing.setName(updated.getName());
         existing.setEmail(updated.getEmail());
         existing.setPhone(updated.getPhone());
@@ -131,7 +147,24 @@ public class CandidateService {
         existing.setBatch(updated.getBatch());
         existing.setResumeReady(updated.getResumeReady());
         existing.setCompletionRate(updated.getCompletionRate());
-        return candidateRepository.save(existing);
+        Candidate saved = candidateRepository.save(existing);
+
+        if (previousBatch == null && updated.getBatch() != null && existing.getStage() == CandidateStage.SOURCING) {
+            if (saved.getSubStatus() != CandidateSubStatus.BATCH_ASSIGNED) {
+                saved.setSubStatus(CandidateSubStatus.BATCH_ASSIGNED);
+                saved = candidateRepository.save(saved);
+            }
+            String title = "Batch Assigned";
+            String batchLabel = updated.getBatch().getName() != null
+                    ? updated.getBatch().getName()
+                    : String.valueOf(updated.getBatch().getId());
+            String description = String.format("Assigned to batch %s.", batchLabel);
+            createTimelineEvent(saved, TimelineEventType.BATCH, title, description,
+                    saved.getStage(), saved.getStage(), "batch_assigned", saved.getSubStatus(),
+                    null, null, null, null);
+        }
+
+        return saved;
     }
 
     @Transactional
@@ -226,9 +259,6 @@ public class CandidateService {
             TransitionRequest request) {
         if (toStage == CandidateStage.TRAINING) {
             requireBatch(candidate.getBatch());
-            if (candidate.getSubStatus() != CandidateSubStatus.SCREENING_PASSED) {
-                throw new InvalidTransitionException("SCREENING_PASSED is required to enter TRAINING");
-            }
         }
 
         if (fromStage == CandidateStage.SOURCING && toStage == CandidateStage.MARKETING) {
@@ -238,14 +268,18 @@ public class CandidateService {
             validateDirectMarketingCompleteness(candidate);
         }
 
-        if (fromStage == CandidateStage.TRAINING && toStage == CandidateStage.MARKETING) {
-            if (candidate.getResumeReady() == null || !candidate.getResumeReady()) {
-                throw new InvalidTransitionException("resumeReady must be true to enter MARKETING");
+        if (fromStage == CandidateStage.MOCKING && toStage == CandidateStage.MARKETING) {
+            if (candidate.getSubStatus() != CandidateSubStatus.MOCK_REAL_PASSED) {
+                throw new InvalidTransitionException("MOCK_REAL_PASSED is required to enter MARKETING");
             }
         }
 
         if (toStage == CandidateStage.PLACED) {
             requireDate(request.getStartDate(), "startDate is required for PLACED");
+        }
+
+        if (toStage == CandidateStage.OFFERED && request.getOfferType() == null) {
+            throw new InvalidTransitionException("offerType is required for OFFERED");
         }
 
         if (toStage == CandidateStage.ELIMINATED && request.getCloseReason() == null) {
@@ -276,11 +310,8 @@ public class CandidateService {
             throw new InvalidTransitionException("reason is required to jump from ON_HOLD to a new stage");
         }
 
-        if (fromStage == CandidateStage.INTERVIEWING && toStage == CandidateStage.MARKETING) {
+        if (fromStage == CandidateStage.OFFERED && toStage == CandidateStage.MARKETING) {
             requireReason(request.getReason(), "reason is required to return to MARKETING");
-        }
-        if (fromStage == CandidateStage.OFFERED && toStage == CandidateStage.INTERVIEWING) {
-            requireReason(request.getReason(), "reason is required to return to INTERVIEWING");
         }
         if (fromStage == CandidateStage.PLACED && toStage == CandidateStage.MARKETING) {
             requireReason(request.getReason(), "reason is required to return to MARKETING");
@@ -305,6 +336,9 @@ public class CandidateService {
         }
         if (request.getOfferDate() != null) {
             candidate.setOfferDate(request.getOfferDate());
+        }
+        if (request.getOfferType() != null) {
+            candidate.setOfferType(request.getOfferType());
         }
         if (request.getStartDate() != null) {
             candidate.setStartDate(request.getStartDate());
@@ -397,8 +431,8 @@ public class CandidateService {
         }
         return switch (toStage) {
             case TRAINING -> "Joined Training";
+            case MOCKING -> "Entered Mocking";
             case MARKETING -> "Entered Marketing";
-            case INTERVIEWING -> "Started Interviewing";
             case OFFERED -> "Offer Received";
             case PLACED -> "Placed Successfully";
             default -> toStage.toString();

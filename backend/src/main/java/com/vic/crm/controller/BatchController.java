@@ -36,6 +36,16 @@ public class BatchController {
         return batchService.update(id, batch);
     }
 
+    @PostMapping("/{id}/start")
+    public Batch start(@PathVariable Long id) {
+        return batchService.startBatch(id);
+    }
+
+    @PostMapping("/{id}/end")
+    public Batch end(@PathVariable Long id) {
+        return batchService.endBatch(id);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {

@@ -152,7 +152,7 @@ post_json "/api/candidates" '{
   "relocation":true,
   "notes":"Full-stack developer. Focused on React and Node.js.",
   "stage":"MARKETING",
-  "subStatus":"RESUME_READY",
+  "subStatus":"MARKETING_ACTIVE",
   "recruiter":{"id":4}
 }'
 

@@ -4,7 +4,7 @@
 import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, Vendor, Client, Submission, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType } from '@/types';
 
 // Re-export types for convenience
-export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType } from '@/types';
+export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -40,6 +40,8 @@ export const batchesApi = {
     getById: (id: number) => fetchApi<Batch>(`/api/batches/${id}`),
     create: (data: Partial<Batch>) => fetchApi<Batch>('/api/batches', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<Batch>) => fetchApi<Batch>(`/api/batches/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    start: (id: number) => fetchApi<Batch>(`/api/batches/${id}/start`, { method: 'POST' }),
+    end: (id: number) => fetchApi<Batch>(`/api/batches/${id}/end`, { method: 'POST' }),
     delete: (id: number) => fetch(`${API_BASE_URL}/api/batches/${id}`, { method: 'DELETE' }),
 };
 
@@ -58,6 +60,7 @@ export const candidatesApi = {
         holdReason?: string;
         nextFollowUpAt?: string;
         reactivateReason?: string;
+        offerType?: OfferType;
         offerDate?: string;
         startDate?: string;
         actorId?: number;
