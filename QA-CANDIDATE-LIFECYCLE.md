@@ -126,7 +126,127 @@ Default subStatus per stage (when not provided in transition):
 SOURCING=SOURCED, TRAINING=IN_TRAINING, MARKETING=RESUME_READY, INTERVIEWING=VENDOR_SCREEN,
 OFFERED=OFFER_PENDING, ON_HOLD=OTHER, PLACED=PLACED_CONFIRMED, ELIMINATED=CLOSED, WITHDRAWN=SELF_WITHDRAWN.
 
-## 5. Allowed Transitions Matrix (Summary)
+## 5. SubStatus Progression Scenarios (All Cases)
+Note: The UI does not currently allow changing subStatus directly. SubStatus can only be set when entering a stage
+(via `toSubStatus` in the transition API). There is no “same-stage subStatus update” endpoint today, so sequential
+progression (e.g., SOURCED -> CONTACTED -> SCREENING_SCHEDULED -> SCREENING_PASSED) must be validated by
+re-entering the stage or by creating a fresh candidate per subStatus value.
+
+### 5.1 SOURCING SubStatus Coverage (All Values)
+Values: SOURCED, CONTACTED, SCREENING_SCHEDULED, SCREENING_PASSED, SCREENING_FAILED, DIRECT_MARKETING_READY
+
+Template steps (repeat once per subStatus value):
+1) Create a new candidate in ELIMINATED:
+```
+POST /api/candidates
+{"name":"QA_SOURCING_1","email":"qa_sourcing_1@vic.com","stage":"ELIMINATED","subStatus":"CLOSED","closeReason":"NO_RESPONSE"}
+```
+2) Reactivate to SOURCING with a specific subStatus:
+```
+POST /api/candidates/{id}/transition
+{"toStage":"SOURCING","toSubStatus":"CONTACTED","reactivateReason":"QA reactivate"}
+```
+Expected: stage=SOURCING, subStatus=CONTACTED, timeline eventType=REACTIVATED.
+
+Sequential progression (simulated):
+- Repeat step 1/2 using different `toSubStatus` values in order:
+SOURCED -> CONTACTED -> SCREENING_SCHEDULED -> SCREENING_PASSED -> SCREENING_FAILED -> DIRECT_MARKETING_READY.
+- Because same-stage changes are not supported, this simulates the sequence via re-entry.
+
+### 5.2 TRAINING SubStatus Coverage (All Values)
+Values: IN_TRAINING, HOMEWORK_PENDING, MOCK_IN_PROGRESS, TRAINING_COMPLETED
+
+Precondition setup (per subStatus):
+1) Create a candidate in SOURCING with subStatus=SCREENING_PASSED.
+2) Assign a batch (update candidate with batch id).
+3) Transition to TRAINING with toSubStatus set.
+
+Example:
+```
+POST /api/candidates
+{"name":"QA_TRAINING_1","email":"qa_training_1@vic.com","stage":"SOURCING","subStatus":"SCREENING_PASSED","batch":{"id":1}}
+
+POST /api/candidates/{id}/transition
+{"toStage":"TRAINING","toSubStatus":"HOMEWORK_PENDING"}
+```
+Expected: stage=TRAINING, subStatus=HOMEWORK_PENDING, timeline eventType=STAGE_CHANGED.
+
+### 5.3 MARKETING SubStatus Coverage (All Values)
+Values: RESUME_READY, PROFILE_PACKAGED, VENDOR_OUTREACH, SUBMITTED
+
+Precondition setup (per subStatus):
+1) Candidate in TRAINING with resumeReady=true and batch assigned.
+2) Transition to MARKETING with toSubStatus.
+
+Example:
+```
+POST /api/candidates/{id}/transition
+{"toStage":"MARKETING","toSubStatus":"PROFILE_PACKAGED"}
+```
+Expected: stage=MARKETING, subStatus=PROFILE_PACKAGED, timeline eventType=STAGE_CHANGED.
+
+### 5.4 INTERVIEWING SubStatus Coverage (All Values)
+Values: VENDOR_SCREEN, CLIENT_ROUND_1, CLIENT_ROUND_2, CLIENT_ROUND_3_PLUS
+
+Precondition setup (per subStatus):
+1) Candidate in MARKETING.
+2) Transition to INTERVIEWING with toSubStatus.
+
+Example:
+```
+POST /api/candidates/{id}/transition
+{"toStage":"INTERVIEWING","toSubStatus":"CLIENT_ROUND_2"}
+```
+Expected: stage=INTERVIEWING, subStatus=CLIENT_ROUND_2, timeline eventType=STAGE_CHANGED.
+
+### 5.5 OFFERED SubStatus Coverage (All Values)
+Values: OFFER_PENDING, OFFER_ACCEPTED, OFFER_DECLINED
+
+Precondition setup (per subStatus):
+1) Candidate in INTERVIEWING.
+2) Transition to OFFERED with toSubStatus.
+
+Example:
+```
+POST /api/candidates/{id}/transition
+{"toStage":"OFFERED","toSubStatus":"OFFER_ACCEPTED"}
+```
+Expected: stage=OFFERED, subStatus=OFFER_ACCEPTED, timeline eventType=OFFERED.
+
+### 5.6 ON_HOLD SubStatus Coverage (All Values)
+Values: WAITING_DOCS, PERSONAL_PAUSE, VISA_ISSUE, OTHER
+
+Precondition setup (per subStatus):
+1) Candidate in any non-terminal stage (e.g., MARKETING).
+2) Transition to ON_HOLD with holdReason + nextFollowUpAt and toSubStatus.
+
+Example:
+```
+POST /api/candidates/{id}/transition
+{"toStage":"ON_HOLD","toSubStatus":"VISA_ISSUE","holdReason":"Visa delay","nextFollowUpAt":"2026-02-01T00:00:00"}
+```
+Expected: stage=ON_HOLD, subStatus=VISA_ISSUE, timeline eventType=ON_HOLD.
+
+### 5.7 PLACED SubStatus Coverage
+Values: PLACED_CONFIRMED
+
+Precondition setup:
+1) Candidate in OFFERED.
+2) Transition to PLACED with startDate.
+
+Expected: stage=PLACED, subStatus=PLACED_CONFIRMED, timeline eventType=PLACED.
+
+### 5.8 ELIMINATED / WITHDRAWN SubStatus Coverage
+Values: ELIMINATED -> CLOSED, WITHDRAWN -> SELF_WITHDRAWN
+
+Precondition setup:
+1) Candidate in any non-terminal stage.
+2) Transition to ELIMINATED with closeReason (subStatus=CLOSED).
+3) Transition to WITHDRAWN with withdrawReason (subStatus=SELF_WITHDRAWN).
+
+Expected: stage matches target, subStatus matches default, timeline eventType ELIMINATED or WITHDRAWN.
+
+## 6. Allowed Transitions Matrix (Summary)
 SOURCING -> TRAINING | MARKETING | ELIMINATED | WITHDRAWN | ON_HOLD
 TRAINING -> MARKETING | ELIMINATED | WITHDRAWN | ON_HOLD
 MARKETING -> INTERVIEWING | ELIMINATED | WITHDRAWN | ON_HOLD
@@ -139,24 +259,24 @@ ON_HOLD -> SOURCING | TRAINING | MARKETING | INTERVIEWING | OFFERED
 
 Any other transition should fail with 400.
 
-## 6. Automated API Validation
+## 7. Automated API Validation
 Run:
 ```
 ./scripts/validate-lifecycle.sh http://localhost:8080
 ```
 Expected: all scenarios PASS, timeline events created for each transition.
 
-## 7. Detailed API Test Cases (All Scenarios)
+## 8. Detailed API Test Cases (All Scenarios)
 Use curl examples; replace IDs as needed. When creating QA candidates, use unique names (prefix QA_) to avoid confusion.
 
-### 7.1 Candidate Creation Baseline
+### 8.1 Candidate Creation Baseline
 TC-API-01 Create candidate (default stage/subStatus)
 Preconditions: backend running.
 Steps:
 1) POST /api/candidates with name + email.
 Expected: stage=SOURCING, subStatus=SOURCED, timeline has CANDIDATE_CREATED.
 
-### 7.2 SubStatus Enforcement (Stage Compatibility)
+### 8.2 SubStatus Enforcement (Stage Compatibility)
 TC-API-02 Invalid subStatus for stage
 Preconditions: candidate in MARKETING.
 Steps:
@@ -169,7 +289,7 @@ Steps:
 1) POST transition to MARKETING with toSubStatus=VENDOR_OUTREACH.
 Expected: success, stage=MARKETING, subStatus=VENDOR_OUTREACH, timeline event STAGE_CHANGED.
 
-### 7.3 SOURCING -> TRAINING (Batch + SCREENING_PASSED)
+### 8.3 SOURCING -> TRAINING (Batch + SCREENING_PASSED)
 TC-API-04 Fail when no batch
 Preconditions: candidate in SOURCING, subStatus=SCREENING_PASSED, batch=null.
 Steps:
@@ -188,7 +308,7 @@ Steps:
 1) POST transition to TRAINING.
 Expected: 200, stage=TRAINING, subStatus defaults to IN_TRAINING (or provided), timeline event STAGE_CHANGED.
 
-### 7.4 SOURCING -> MARKETING (Direct Marketing)
+### 8.4 SOURCING -> MARKETING (Direct Marketing)
 TC-API-07 Fail without DIRECT_MARKETING_READY
 Preconditions: candidate in SOURCING, subStatus!=DIRECT_MARKETING_READY.
 Steps:
@@ -207,7 +327,7 @@ Steps:
 1) POST transition to MARKETING.
 Expected: 200, stage=MARKETING, subStatus defaults to RESUME_READY (or provided), timeline event STAGE_CHANGED.
 
-### 7.5 TRAINING -> MARKETING (Resume Ready)
+### 8.5 TRAINING -> MARKETING (Resume Ready)
 TC-API-10 Fail when resumeReady=false
 Preconditions: candidate in TRAINING with resumeReady=false.
 Steps:
@@ -220,21 +340,21 @@ Steps:
 1) POST transition to MARKETING.
 Expected: 200, stage=MARKETING, timeline event STAGE_CHANGED.
 
-### 7.6 MARKETING -> INTERVIEWING
+### 8.6 MARKETING -> INTERVIEWING
 TC-API-12 Success (no extra rules)
 Preconditions: candidate in MARKETING.
 Steps:
 1) POST transition to INTERVIEWING with toSubStatus=CLIENT_ROUND_1 (optional).
 Expected: 200, stage=INTERVIEWING, subStatus set, timeline event STAGE_CHANGED.
 
-### 7.7 INTERVIEWING -> OFFERED
+### 8.7 INTERVIEWING -> OFFERED
 TC-API-13 Success (no extra rules)
 Preconditions: candidate in INTERVIEWING.
 Steps:
 1) POST transition to OFFERED.
 Expected: 200, stage=OFFERED, timeline event OFFERED.
 
-### 7.8 OFFERED -> PLACED (Start Date Required)
+### 8.8 OFFERED -> PLACED (Start Date Required)
 TC-API-14 Fail when startDate missing
 Preconditions: candidate in OFFERED.
 Steps:
@@ -247,7 +367,7 @@ Steps:
 1) POST transition to PLACED with startDate.
 Expected: 200, stage=PLACED, timeline event PLACED.
 
-### 7.9 ELIMINATED / WITHDRAWN Requirements
+### 8.9 ELIMINATED / WITHDRAWN Requirements
 TC-API-16 ELIMINATED requires closeReason
 Preconditions: candidate in MARKETING.
 Steps:
@@ -272,7 +392,7 @@ Steps:
 1) POST transition to WITHDRAWN with withdrawReason.
 Expected: 200, stage=WITHDRAWN, subStatus=SELF_WITHDRAWN, timeline event WITHDRAWN.
 
-### 7.10 ON_HOLD Requirements + Return Logic
+### 8.10 ON_HOLD Requirements + Return Logic
 TC-API-20 ON_HOLD requires holdReason and nextFollowUpAt
 Preconditions: candidate in MARKETING.
 Steps:
@@ -297,7 +417,7 @@ Steps:
 1) POST transition to INTERVIEWING without reason.
 Expected: 400 “reason is required to jump from ON_HOLD to a new stage”.
 
-### 7.11 Reactivation (from ELIMINATED / WITHDRAWN)
+### 8.11 Reactivation (from ELIMINATED / WITHDRAWN)
 TC-API-24 Reactivation requires reactivateReason
 Preconditions: candidate in ELIMINATED.
 Steps:
@@ -310,7 +430,7 @@ Steps:
 1) POST transition to MARKETING with reactivateReason.
 Expected: 200, stage=MARKETING, timeline event REACTIVATED.
 
-### 7.12 Return-to-Stage Reasons
+### 8.12 Return-to-Stage Reasons
 TC-API-26 INTERVIEWING -> MARKETING requires reason
 Preconditions: candidate in INTERVIEWING.
 Steps:
@@ -329,14 +449,14 @@ Steps:
 1) POST transition to MARKETING without reason.
 Expected: 400 “reason is required to return to MARKETING”.
 
-### 7.13 Invalid Transition Matrix
+### 8.13 Invalid Transition Matrix
 TC-API-29 Block invalid transition
 Preconditions: candidate in MARKETING.
 Steps:
 1) POST transition to TRAINING.
 Expected: 400 “Transition from MARKETING to TRAINING is not allowed”.
 
-### 7.14 Timeline Event Verification
+### 8.14 Timeline Event Verification
 TC-API-30 Event type mapping
 Preconditions: candidate transitions through stages.
 Steps:
@@ -344,8 +464,8 @@ Steps:
 2) GET /api/candidates/{id}/timeline.
 Expected: eventType is ON_HOLD / ELIMINATED / WITHDRAWN / OFFERED / PLACED / REACTIVATED accordingly. Each event contains fromStage/toStage/subStatus.
 
-## 8. Detailed UI Test Cases (All Scenarios)
-UI only supports stage transitions (subStatus is API-only for now). Use API for subStatus coverage in section 7.
+## 9. Detailed UI Test Cases (All Scenarios)
+UI only supports stage transitions (subStatus is API-only for now). Use API for subStatus coverage in section 5.
 
 UI-01 Dashboard stage cards
 Steps:
@@ -435,10 +555,10 @@ Steps:
 1) Open any candidate with 3+ events.
 Expected: timeline shows event date, title, description; icons align with eventType (stage change, offered, placed, eliminated, on hold).
 
-## 9. Pass/Fail Criteria
+## 10. Pass/Fail Criteria
 PASS if all required transitions succeed, invalid transitions are blocked with correct error messages, timeline events are created and rendered correctly, and UI reflects stage/subStatus consistently.
 
-## 10. Known Limitations / Notes
+## 11. Known Limitations / Notes
 - UI does not allow choosing subStatus; subStatus validation is API-only.
 - Timeline events are displayed by eventDate; new events should appear at the top.
 - The "Resume Ready" timeline event does not toggle the resumeReady boolean; check Market Entry Gate for the real flag.
