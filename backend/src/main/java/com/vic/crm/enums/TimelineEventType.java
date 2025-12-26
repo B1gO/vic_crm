@@ -4,6 +4,17 @@ package com.vic.crm.enums;
  * Types of events in the candidate career timeline
  */
 public enum TimelineEventType {
+    CANDIDATE_CREATED, // candidate created
+    STAGE_CHANGED, // stage transitioned
+    SUBSTATUS_CHANGED, // sub-status updated
+    ON_HOLD, // put on hold
+    ELIMINATED, // eliminated/closed
+    WITHDRAWN, // candidate withdrawn
+    REACTIVATED, // reactivated from eliminated/withdrawn
+    OFFERED, // offer issued/accepted
+    PLACED, // placed successfully
+    NOTE, // manual note
+
     STAGE_CHANGE, // Lifecycle stage transitions (auto)
     COMMUNICATION, // talked, scheduled_screening
     CONTRACT, // contract_sent, contract_signed

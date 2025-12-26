@@ -1,8 +1,9 @@
 package com.vic.crm.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.vic.crm.enums.CandidateStage;
+import com.vic.crm.enums.CandidateSubStatus;
 import com.vic.crm.enums.CloseReason;
-import com.vic.crm.enums.LifecycleStage;
 import com.vic.crm.enums.TimelineEventType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -42,10 +43,13 @@ public class TimelineEvent {
 
     // For STAGE_CHANGE events
     @Enumerated(EnumType.STRING)
-    private LifecycleStage fromStage;
+    private CandidateStage fromStage;
 
     @Enumerated(EnumType.STRING)
-    private LifecycleStage toStage;
+    private CandidateStage toStage;
+
+    @Enumerated(EnumType.STRING)
+    private CandidateSubStatus subStatus;
 
     // For CLOSED events
     @Enumerated(EnumType.STRING)
@@ -65,8 +69,13 @@ public class TimelineEvent {
     @Column(updatable = false)
     private LocalDateTime eventDate;
 
+    @Column(columnDefinition = "TEXT")
+    private String metaJson;
+
     @PrePersist
     protected void onCreate() {
-        eventDate = LocalDateTime.now();
+        if (eventDate == null) {
+            eventDate = LocalDateTime.now();
+        }
     }
 }

@@ -1,10 +1,10 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, TimelineEvent, LifecycleStage, Vendor, Client, Submission, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType, RecruitmentStatus } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, Vendor, Client, Submission, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType } from '@/types';
 
 // Re-export types for convenience
-export type { User, Batch, Candidate, TimelineEvent, LifecycleStage, WorkAuth, UserRole, TimelineEventType, CloseReason, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType, RecruitmentStatus } from '@/types';
+export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, Vendor, Client, Submission, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -45,14 +45,26 @@ export const batchesApi = {
 
 // Candidates API
 export const candidatesApi = {
-    getAll: (stage?: LifecycleStage) => fetchApi<Candidate[]>(`/api/candidates${stage ? `?stage=${stage}` : ''}`),
+    getAll: (stage?: CandidateStage) => fetchApi<Candidate[]>(`/api/candidates${stage ? `?stage=${stage}` : ''}`),
     getById: (id: number) => fetchApi<Candidate>(`/api/candidates/${id}`),
     create: (data: Partial<Candidate>) => fetchApi<Candidate>('/api/candidates', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<Candidate>) => fetchApi<Candidate>(`/api/candidates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    transition: (id: number, toStage: LifecycleStage, reason?: string) =>
+    transition: (id: number, payload: {
+        toStage: CandidateStage;
+        toSubStatus?: CandidateSubStatus;
+        reason?: string;
+        closeReason?: CloseReason;
+        withdrawReason?: string;
+        holdReason?: string;
+        nextFollowUpAt?: string;
+        reactivateReason?: string;
+        offerDate?: string;
+        startDate?: string;
+        actorId?: number;
+    }) =>
         fetchApi<Candidate>(`/api/candidates/${id}/transition`, {
             method: 'POST',
-            body: JSON.stringify({ toStage, reason })
+            body: JSON.stringify(payload)
         }),
     getTimeline: (id: number) => fetchApi<TimelineEvent[]>(`/api/candidates/${id}/timeline`),
     getTransitions: (id: number) => fetchApi<TimelineEvent[]>(`/api/candidates/${id}/timeline`),

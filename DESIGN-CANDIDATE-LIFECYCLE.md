@@ -35,6 +35,20 @@
 - `WITHDRAWN` 退出
 - `ON_HOLD` 暂停
 
+### Stage 含义与前置条件
+
+| Stage | 含义 | 进入前置条件 |
+| --- | --- | --- |
+| SOURCING | 招募/筛选阶段（录入、联系、安排筛选） | 默认阶段，无硬性前置条件 |
+| TRAINING | 已进入培训批次 | `subStatus=SCREENING_PASSED` 且 `batch` 非空 |
+| MARKETING | 进入营销准备或营销期 | 训练转入：`resumeReady=true`；直推转入：`subStatus=DIRECT_MARKETING_READY` + 完整度校验 |
+| INTERVIEWING | 已进入面试流程 | 建议已有 Submission（软校验） |
+| OFFERED | 收到/确认 offer | 无硬约束，但建议填写 `offerDate` |
+| PLACED | 成功入职 | `startDate` 必填 |
+| ELIMINATED | 淘汰关闭 | `closeReason` 必填 |
+| WITHDRAWN | 候选人退出 | `withdrawReason` 必填 |
+| ON_HOLD | 暂停跟进 | 非终态阶段进入，`holdReason` + `nextFollowUpAt` 必填 |
+
 ### 子状态 (CandidateSubStatus)
 - SOURCING: `SOURCED`, `CONTACTED`, `SCREENING_SCHEDULED`, `SCREENING_PASSED`, `SCREENING_FAILED`, `DIRECT_MARKETING_READY`
 - TRAINING: `IN_TRAINING`, `HOMEWORK_PENDING`, `MOCK_IN_PROGRESS`, `TRAINING_COMPLETED`
@@ -234,10 +248,9 @@ flowchart LR
 - `lifecycleStage=RECRUITMENT` + `recruitmentStatus=SCREENING_PASSED` -> `stage=TRAINING`, `subStatus=IN_TRAINING`
 - 其余 `recruitmentStatus` -> `stage=SOURCING`, `subStatus` 同名
 
-### 迁移策略
-- Phase 1: 新增字段并双写（旧字段继续保留）。
-- Phase 2: 读路径切换到 `stage/subStatus`，旧字段仅回填。
-- Phase 3: 业务稳定后清理旧字段（可选）。
+### 迁移策略（当前选择：直接切换）
+- 当前无真实数据，采用 **直接切换**：只使用 `stage/subStatus`，不做双写。
+- 若未来需要兼容旧字段，可启用三阶段迁移（双写 -> 读切换 -> 清理）。
 
 ## 实现步骤（建议顺序）
 
@@ -274,7 +287,7 @@ Tasks:
 - 双写策略和 `mapLegacyToStage()`。
 
 验证计划:
-1. 启动 backend 后运行 `./scripts/seed-data.sh`。
+1. 启动 backend 后运行 `./scripts/seed-data-timeline.sh`。
 2. `GET /api/candidates`，确认每个候选人都有 `stage/subStatus`。
 3. 检查 Sara/Zack/Emma/Tom 映射是否符合规则。
 
@@ -318,6 +331,22 @@ Tasks:
 验证计划:
 1. README 与实际 API 字段一致。
 2. UI 不再依赖旧字段。
+
+## QA 场景（开发验证）
+
+### API 自动化（`scripts/validate-lifecycle.sh`）
+- Emma -> TRAINING（无 batch）应返回 400。
+- Nina -> MARKETING（resumeReady=false）应返回 400。
+- Tom 复活无原因应返回 400；带 `reactivateReason` 成功且 timeline 最新事件为 `REACTIVATED`。
+- Emma -> ON_HOLD 缺少字段应返回 400；带 `holdReason/nextFollowUpAt` 成功且 timeline 最新事件为 `ON_HOLD`。
+- Mingkai -> PLACED 无 startDate 失败；带 startDate 成功且 timeline 最新事件为 `PLACED`。
+
+### UI 手动验证
+- Candidates 列表显示 `stage` badge 与 `subStatus` chip。
+- 详情页 Transition 按钮触发必要的提示并更新 timeline。
+- Timeline 按 `eventDate` 倒序展示并高亮关键事件。
+
+更多步骤见 `QA-CANDIDATE-LIFECYCLE.md`。
 
 ## 可选增强
 - 增加简单 RBAC（非本次目标）。

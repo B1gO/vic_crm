@@ -1,19 +1,11 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { candidatesApi, usersApi, batchesApi, Candidate, User, Batch, LifecycleStage, WorkAuth } from '@/lib/api';
+import { candidatesApi, usersApi, batchesApi, Candidate, User, Batch, WorkAuth } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CandidateTable } from '@/components/CandidateTable';
 import { Plus, Search } from 'lucide-react';
-
-const stageLabels: Record<LifecycleStage, string> = {
-    RECRUITMENT: 'Recruitment',
-    TRAINING: 'Training',
-    MARKET_READY: 'Marketing',
-    PLACED: 'Placed',
-    ELIMINATED: 'Terminated',
-};
 
 export default function CandidatesPage() {
     const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -82,7 +74,8 @@ export default function CandidatesPage() {
                 phone: formData.phone || undefined,
                 city: formData.city || undefined,
                 state: formData.state || undefined,
-                lifecycleStage: 'RECRUITMENT',
+                stage: 'SOURCING',
+                subStatus: 'SOURCED',
                 workAuth: formData.workAuth || undefined,
                 recruiter: formData.recruiterId ? { id: Number(formData.recruiterId) } as User : undefined,
                 batch: formData.batchId ? { id: Number(formData.batchId) } as Batch : undefined,

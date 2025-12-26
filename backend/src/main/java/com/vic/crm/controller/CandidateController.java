@@ -5,7 +5,7 @@ import com.vic.crm.dto.TransitionRequest;
 import com.vic.crm.entity.Candidate;
 import com.vic.crm.entity.TimelineEvent;
 import com.vic.crm.entity.User;
-import com.vic.crm.enums.LifecycleStage;
+import com.vic.crm.enums.CandidateStage;
 import com.vic.crm.service.CandidateService;
 import com.vic.crm.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class CandidateController {
     private final UserService userService;
 
     @GetMapping
-    public List<Candidate> getAll(@RequestParam(required = false) LifecycleStage stage) {
+    public List<Candidate> getAll(@RequestParam(required = false) CandidateStage stage) {
         if (stage != null) {
             return candidateService.findByStage(stage);
         }
@@ -48,11 +48,11 @@ public class CandidateController {
 
     @PostMapping("/{id}/transition")
     public Candidate transition(@PathVariable Long id, @RequestBody TransitionRequest request) {
-        User changedBy = null;
-        if (request.getChangedById() != null) {
-            changedBy = userService.findById(request.getChangedById());
+        User actor = null;
+        if (request.getActorId() != null) {
+            actor = userService.findById(request.getActorId());
         }
-        return candidateService.transition(id, request.getToStage(), request.getReason(), changedBy);
+        return candidateService.transition(id, request, actor);
     }
 
     @GetMapping("/{id}/timeline")
@@ -63,11 +63,12 @@ public class CandidateController {
     @PostMapping("/{id}/timeline")
     @ResponseStatus(HttpStatus.CREATED)
     public TimelineEvent addTimelineEvent(@PathVariable Long id, @RequestBody TimelineEventRequest request) {
-        User createdBy = null;
-        if (request.getCreatedById() != null) {
-            createdBy = userService.findById(request.getCreatedById());
+        User actor = null;
+        if (request.getActorId() != null) {
+            actor = userService.findById(request.getActorId());
         }
         return candidateService.addTimelineEvent(id, request.getEventType(), request.getSubType(),
-                request.getTitle(), request.getDescription(), request.getCloseReason(), createdBy);
+                request.getTitle(), request.getDescription(), request.getCloseReason(),
+                request.getSubStatus(), request.getMetaJson(), request.getEventDate(), actor);
     }
 }

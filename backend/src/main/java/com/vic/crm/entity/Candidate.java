@@ -1,7 +1,8 @@
 package com.vic.crm.entity;
 
-import com.vic.crm.enums.LifecycleStage;
-import com.vic.crm.enums.RecruitmentStatus;
+import com.vic.crm.enums.CandidateStage;
+import com.vic.crm.enums.CandidateSubStatus;
+import com.vic.crm.enums.CloseReason;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -48,14 +50,39 @@ public class Candidate {
     private String school;
     private String major;
 
-    // Lifecycle
+    // Lifecycle (single state machine)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LifecycleStage lifecycleStage = LifecycleStage.RECRUITMENT;
+    private CandidateStage stage = CandidateStage.SOURCING;
 
-    // Recruitment Status (sourcing workflow before batch assignment)
     @Enumerated(EnumType.STRING)
-    private RecruitmentStatus recruitmentStatus = RecruitmentStatus.SOURCED;
+    @Column(nullable = false)
+    private CandidateSubStatus subStatus = CandidateSubStatus.SOURCED;
+
+    @Enumerated(EnumType.STRING)
+    private CandidateStage lastActiveStage;
+
+    private LocalDateTime stageUpdatedAt;
+
+    // Hold/close/reactivate metadata
+    private String holdReason;
+    private LocalDateTime nextFollowUpAt;
+
+    @Enumerated(EnumType.STRING)
+    private CloseReason closeReason;
+
+    @Column(columnDefinition = "TEXT")
+    private String closeReasonNote;
+
+    @Column(columnDefinition = "TEXT")
+    private String withdrawReason;
+
+    @Column(columnDefinition = "TEXT")
+    private String reactivateReason;
+
+    // Offer and placement dates
+    private LocalDate offerDate;
+    private LocalDate startDate;
 
     // Relationships (batch is optional - null until assigned after screening)
     @ManyToOne(fetch = FetchType.EAGER)

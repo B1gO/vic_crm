@@ -78,7 +78,7 @@ export default function BatchDetailPage() {
                 <Card>
                     <CardContent className="p-4">
                         <div className="text-2xl font-bold text-yellow-600">
-                            {candidates.filter(c => c.lifecycleStage === 'TRAINING').length}
+                            {candidates.filter(c => c.stage === 'TRAINING').length}
                         </div>
                         <div className="text-sm text-muted-foreground">In Training</div>
                     </CardContent>
@@ -86,15 +86,15 @@ export default function BatchDetailPage() {
                 <Card>
                     <CardContent className="p-4">
                         <div className="text-2xl font-bold text-blue-600">
-                            {candidates.filter(c => c.lifecycleStage === 'MARKET_READY').length}
+                            {candidates.filter(c => c.stage === 'MARKETING').length}
                         </div>
-                        <div className="text-sm text-muted-foreground">Market Ready</div>
+                        <div className="text-sm text-muted-foreground">Marketing</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="p-4">
                         <div className="text-2xl font-bold text-green-600">
-                            {candidates.filter(c => c.lifecycleStage === 'PLACED').length}
+                            {candidates.filter(c => c.stage === 'PLACED').length}
                         </div>
                         <div className="text-sm text-muted-foreground">Placed</div>
                     </CardContent>
@@ -117,9 +117,9 @@ export default function BatchDetailPage() {
                             if (!acc[recruiterName]) {
                                 acc[recruiterName] = { sourced: 0, ready: 0, placed: 0 };
                             }
-                            acc[recruiterName].sourced++;
-                            if (c.lifecycleStage === 'MARKET_READY') acc[recruiterName].ready++;
-                            if (c.lifecycleStage === 'PLACED') acc[recruiterName].placed++;
+                            if (c.stage === 'SOURCING') acc[recruiterName].sourced++;
+                            if (c.stage === 'MARKETING') acc[recruiterName].ready++;
+                            if (c.stage === 'PLACED') acc[recruiterName].placed++;
                             return acc;
                         }, {} as Record<string, { sourced: number; ready: number; placed: number }>);
 

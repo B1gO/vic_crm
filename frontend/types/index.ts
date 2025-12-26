@@ -3,11 +3,60 @@
  */
 
 // === Enums ===
-export type LifecycleStage = 'RECRUITMENT' | 'TRAINING' | 'MARKET_READY' | 'PLACED' | 'ELIMINATED';
+export type CandidateStage =
+    | 'SOURCING'
+    | 'TRAINING'
+    | 'MARKETING'
+    | 'INTERVIEWING'
+    | 'OFFERED'
+    | 'PLACED'
+    | 'ELIMINATED'
+    | 'WITHDRAWN'
+    | 'ON_HOLD';
+
+export type CandidateSubStatus =
+    | 'SOURCED'
+    | 'CONTACTED'
+    | 'SCREENING_SCHEDULED'
+    | 'SCREENING_PASSED'
+    | 'SCREENING_FAILED'
+    | 'DIRECT_MARKETING_READY'
+    | 'IN_TRAINING'
+    | 'HOMEWORK_PENDING'
+    | 'MOCK_IN_PROGRESS'
+    | 'TRAINING_COMPLETED'
+    | 'RESUME_READY'
+    | 'PROFILE_PACKAGED'
+    | 'VENDOR_OUTREACH'
+    | 'SUBMITTED'
+    | 'VENDOR_SCREEN'
+    | 'CLIENT_ROUND_1'
+    | 'CLIENT_ROUND_2'
+    | 'CLIENT_ROUND_3_PLUS'
+    | 'OFFER_PENDING'
+    | 'OFFER_ACCEPTED'
+    | 'OFFER_DECLINED'
+    | 'WAITING_DOCS'
+    | 'PERSONAL_PAUSE'
+    | 'VISA_ISSUE'
+    | 'OTHER'
+    | 'PLACED_CONFIRMED'
+    | 'CLOSED'
+    | 'SELF_WITHDRAWN';
 export type WorkAuth = 'CITIZEN' | 'GC' | 'OPT' | 'H1B' | 'CPT' | 'OTHER';
 export type UserRole = 'ADMIN' | 'RECRUITER' | 'TRAINER' | 'SUPPORTER' | 'MANAGER';
 
 export type TimelineEventType =
+    | 'CANDIDATE_CREATED'
+    | 'STAGE_CHANGED'
+    | 'SUBSTATUS_CHANGED'
+    | 'ON_HOLD'
+    | 'ELIMINATED'
+    | 'WITHDRAWN'
+    | 'REACTIVATED'
+    | 'OFFERED'
+    | 'PLACED'
+    | 'NOTE'
     | 'STAGE_CHANGE'
     | 'COMMUNICATION'
     | 'CONTRACT'
@@ -33,7 +82,6 @@ export type CloseReason =
 
 export type SubmissionStatus = 'VENDOR_SCREENING' | 'CLIENT_ROUND' | 'OFFERED' | 'PLACED' | 'REJECTED';
 export type ScreeningType = 'OA' | 'INTERVIEW' | 'DIRECT';
-export type RecruitmentStatus = 'SOURCED' | 'SCREENING_SCHEDULED' | 'SCREENING_PASSED' | 'SCREENING_FAILED' | 'DIRECT_MARKETING';
 
 // === Entities ===
 export interface User {
@@ -101,9 +149,19 @@ export interface Candidate {
     relocation: boolean | null;
     school: string | null;
     major: string | null;
-    // Workspace
-    lifecycleStage: LifecycleStage;
-    recruitmentStatus: RecruitmentStatus;
+    // Lifecycle
+    stage: CandidateStage;
+    subStatus: CandidateSubStatus;
+    lastActiveStage: CandidateStage | null;
+    stageUpdatedAt: string;
+    holdReason: string | null;
+    nextFollowUpAt: string | null;
+    closeReason: CloseReason | null;
+    closeReasonNote: string | null;
+    withdrawReason: string | null;
+    reactivateReason: string | null;
+    offerDate: string | null;
+    startDate: string | null;
     batch: Batch | null;
     recruiter: User | null;
     resumeReady: boolean;
@@ -145,13 +203,15 @@ export interface TimelineEvent {
     id: number;
     eventType: TimelineEventType;
     subType?: string;
-    fromStage?: LifecycleStage;
-    toStage?: LifecycleStage;
+    fromStage?: CandidateStage;
+    toStage?: CandidateStage;
+    subStatus?: CandidateSubStatus;
     closeReason?: CloseReason;
     title: string;
     description?: string;
     eventDate: string;
     createdBy?: User;
+    metaJson?: string;
 }
 
 // Legacy alias for backwards compatibility

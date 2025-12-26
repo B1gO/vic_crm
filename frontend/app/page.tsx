@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { candidatesApi, Candidate, LifecycleStage } from '@/lib/api';
-import { Users, UserCheck, GraduationCap, Briefcase, XCircle } from 'lucide-react';
+import { candidatesApi, Candidate, CandidateStage } from '@/lib/api';
+import { Users, UserCheck, GraduationCap, Briefcase, XCircle, MessageSquare, BadgeCheck, PauseCircle, LogOut } from 'lucide-react';
 
-const stageConfig: Record<LifecycleStage, { label: string; icon: React.ElementType; color: string }> = {
-    RECRUITMENT: { label: 'Recruitment', icon: Users, color: 'text-blue-600 bg-blue-100' },
+const stageConfig: Record<CandidateStage, { label: string; icon: React.ElementType; color: string }> = {
+    SOURCING: { label: 'Sourcing', icon: Users, color: 'text-blue-600 bg-blue-100' },
     TRAINING: { label: 'Training', icon: GraduationCap, color: 'text-amber-600 bg-amber-100' },
-    MARKET_READY: { label: 'Market Ready', icon: UserCheck, color: 'text-emerald-600 bg-emerald-100' },
+    MARKETING: { label: 'Marketing', icon: UserCheck, color: 'text-emerald-600 bg-emerald-100' },
+    INTERVIEWING: { label: 'Interviewing', icon: MessageSquare, color: 'text-sky-600 bg-sky-100' },
+    OFFERED: { label: 'Offered', icon: BadgeCheck, color: 'text-lime-600 bg-lime-100' },
     PLACED: { label: 'Placed', icon: Briefcase, color: 'text-indigo-600 bg-indigo-100' },
     ELIMINATED: { label: 'Eliminated', icon: XCircle, color: 'text-red-600 bg-red-100' },
+    WITHDRAWN: { label: 'Withdrawn', icon: LogOut, color: 'text-rose-600 bg-rose-100' },
+    ON_HOLD: { label: 'On Hold', icon: PauseCircle, color: 'text-gray-600 bg-gray-100' },
 };
 
 export default function DashboardPage() {
@@ -24,10 +28,10 @@ export default function DashboardPage() {
             .finally(() => setLoading(false));
     }, []);
 
-    const countByStage = (stage: LifecycleStage) =>
-        candidates.filter(c => c.lifecycleStage === stage).length;
+    const countByStage = (stage: CandidateStage) =>
+        candidates.filter(c => c.stage === stage).length;
 
-    const stages: LifecycleStage[] = ['RECRUITMENT', 'TRAINING', 'MARKET_READY', 'PLACED', 'ELIMINATED'];
+    const stages: CandidateStage[] = ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED', 'PLACED', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'];
 
     return (
         <div className="space-y-8">
@@ -88,7 +92,7 @@ export default function DashboardPage() {
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Active Pipeline</span>
                                 <span className="font-semibold">
-                                    {candidates.filter(c => !['PLACED', 'ELIMINATED'].includes(c.lifecycleStage)).length}
+                                    {candidates.filter(c => !['PLACED', 'ELIMINATED', 'WITHDRAWN'].includes(c.stage)).length}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center">
@@ -120,8 +124,8 @@ export default function DashboardPage() {
                                             </div>
                                             <span className="font-medium text-sm">{candidate.name}</span>
                                         </div>
-                                        <span className={`text-xs px-2 py-1 rounded-full ${stageConfig[candidate.lifecycleStage].color}`}>
-                                            {stageConfig[candidate.lifecycleStage].label}
+                                        <span className={`text-xs px-2 py-1 rounded-full ${stageConfig[candidate.stage].color}`}>
+                                            {stageConfig[candidate.stage].label}
                                         </span>
                                     </div>
                                 ))}

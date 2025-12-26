@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, Candidate, TimelineEvent, LifecycleStage, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch } from '@/lib/api';
+import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, Candidate, TimelineEvent, CandidateStage, CloseReason, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
@@ -26,12 +26,16 @@ const statusLabels: Record<string, string> = {
     REJECTED: 'Rejected',
 };
 
-const allowedTransitions: Record<LifecycleStage, LifecycleStage[]> = {
-    RECRUITMENT: ['TRAINING', 'ELIMINATED'],
-    TRAINING: ['MARKET_READY', 'ELIMINATED'],
-    MARKET_READY: ['PLACED', 'ELIMINATED'],
-    PLACED: [],
-    ELIMINATED: [],
+const allowedTransitions: Record<CandidateStage, CandidateStage[]> = {
+    SOURCING: ['TRAINING', 'MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    TRAINING: ['MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    MARKETING: ['INTERVIEWING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    INTERVIEWING: ['OFFERED', 'MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    OFFERED: ['PLACED', 'INTERVIEWING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    PLACED: ['MARKETING', 'ELIMINATED', 'WITHDRAWN'],
+    ELIMINATED: ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'],
+    WITHDRAWN: ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'],
+    ON_HOLD: ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'],
 };
 
 const workAuthLabels: Record<WorkAuth, string> = {
@@ -42,6 +46,15 @@ const workAuthLabels: Record<WorkAuth, string> = {
     CPT: 'CPT',
     OTHER: 'Other',
 };
+
+const closeReasonOptions: CloseReason[] = [
+    'RETURNED_HOME',
+    'FOUND_FULLTIME',
+    'OTHER_OPPORTUNITY',
+    'NO_HOMEWORK',
+    'BEHAVIOR_ISSUE',
+    'NO_RESPONSE'
+];
 
 export default function CandidateDetailPage() {
     const params = useParams();
@@ -55,6 +68,7 @@ export default function CandidateDetailPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'workspace' | 'profile' | 'submissions' | 'mocks' | 'documents'>('workspace');
     const [transitioning, setTransitioning] = useState(false);
+    const [transitionError, setTransitionError] = useState<string | null>(null);
     const [mocks, setMocks] = useState<Mock[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [showMockForm, setShowMockForm] = useState(false);
@@ -126,16 +140,114 @@ export default function CandidateDetailPage() {
         }
     };
 
-    const handleTransition = async (toStage: LifecycleStage) => {
+    const promptValue = (message: string) => {
+        const value = window.prompt(message);
+        return value && value.trim() ? value.trim() : null;
+    };
+
+    const promptDate = (message: string) => {
+        const value = promptValue(message);
+        return value ? `${value}T00:00:00` : null;
+    };
+
+    const requireReason = (message: string) => {
+        const value = promptValue(message);
+        return value || null;
+    };
+
+    const requireCloseReason = () => {
+        const value = promptValue(`Close reason (${closeReasonOptions.join(', ')}):`);
+        if (!value) return null;
+        const normalized = value.toUpperCase().replace(/\s+/g, '_');
+        if (!closeReasonOptions.includes(normalized as CloseReason)) {
+            alert('Invalid closeReason. Use one of the listed values.');
+            return null;
+        }
+        return normalized as CloseReason;
+    };
+
+    const handleTransition = async (toStage: CandidateStage) => {
         if (!candidate) return;
+        setTransitionError(null);
+        const payload: {
+            toStage: CandidateStage;
+            reason?: string;
+            closeReason?: CloseReason;
+            withdrawReason?: string;
+            holdReason?: string;
+            nextFollowUpAt?: string;
+            reactivateReason?: string;
+            startDate?: string;
+        } = { toStage, reason: `Moved to ${toStage}` };
+
+        if (toStage === 'ELIMINATED') {
+            const closeReason = requireCloseReason();
+            if (!closeReason) return;
+            payload.closeReason = closeReason;
+        }
+
+        if (toStage === 'WITHDRAWN') {
+            const withdrawReason = promptValue('Withdraw reason:');
+            if (!withdrawReason) return;
+            payload.withdrawReason = withdrawReason;
+        }
+
+        if (toStage === 'ON_HOLD') {
+            const holdReason = promptValue('Hold reason:');
+            const nextFollowUpAt = promptDate('Next follow-up date (YYYY-MM-DD):');
+            if (!holdReason || !nextFollowUpAt) return;
+            payload.holdReason = holdReason;
+            payload.nextFollowUpAt = nextFollowUpAt;
+        }
+
+        if (toStage === 'PLACED') {
+            const startDate = promptValue('Start date (YYYY-MM-DD):');
+            if (!startDate) return;
+            payload.startDate = startDate;
+        }
+
+        if ((candidate.stage === 'ELIMINATED' || candidate.stage === 'WITHDRAWN')
+            && ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'].includes(toStage)) {
+            const reactivateReason = promptValue('Reactivate reason:');
+            if (!reactivateReason) return;
+            payload.reactivateReason = reactivateReason;
+        }
+
+        if (candidate.stage === 'ON_HOLD'
+            && candidate.lastActiveStage
+            && toStage !== candidate.lastActiveStage) {
+            const reason = requireReason('Reason for jumping stages:');
+            if (!reason) return;
+            payload.reason = reason;
+        }
+
+        if (candidate.stage === 'INTERVIEWING' && toStage === 'MARKETING') {
+            const reason = requireReason('Reason to return to marketing:');
+            if (!reason) return;
+            payload.reason = reason;
+        }
+
+        if (candidate.stage === 'OFFERED' && toStage === 'INTERVIEWING') {
+            const reason = requireReason('Reason to return to interviewing:');
+            if (!reason) return;
+            payload.reason = reason;
+        }
+
+        if (candidate.stage === 'PLACED' && toStage === 'MARKETING') {
+            const reason = requireReason('Reason to return to marketing:');
+            if (!reason) return;
+            payload.reason = reason;
+        }
+
         setTransitioning(true);
         try {
-            const updated = await candidatesApi.transition(candidate.id, toStage, `Moved to ${toStage}`);
+            const updated = await candidatesApi.transition(candidate.id, payload);
             setCandidate(updated);
             const newTimeline = await candidatesApi.getTimeline(id);
             setTimeline(newTimeline);
         } catch (error) {
-            console.error('Transition failed:', error);
+            const message = error instanceof Error ? error.message : 'Transition failed';
+            setTransitionError(message);
         } finally {
             setTransitioning(false);
         }
@@ -149,7 +261,7 @@ export default function CandidateDetailPage() {
         return <div>Candidate not found</div>;
     }
 
-    const nextStages = allowedTransitions[candidate.lifecycleStage];
+    const nextStages = allowedTransitions[candidate.stage];
 
     return (
         <div className="space-y-6">
@@ -176,7 +288,7 @@ export default function CandidateDetailPage() {
                         <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
                                 <h1 className="text-2xl font-bold">{candidate.name}</h1>
-                                <StageBadge stage={candidate.lifecycleStage} />
+                                <StageBadge stage={candidate.stage} />
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                 {candidate.batch && (
@@ -280,6 +392,20 @@ export default function CandidateDetailPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
+                            {transitionError && (
+                                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <span>{transitionError}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setTransitionError(null)}
+                                            className="text-red-600 hover:text-red-800"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                             <div className="flex items-center gap-3">
                                 <div className={cn("w-5 h-5 rounded flex items-center justify-center text-white text-xs",
                                     candidate.resumeReady ? "bg-emerald-500" : "bg-muted")}>
@@ -336,15 +462,23 @@ export default function CandidateDetailPage() {
                                             )}
                                             <div className={cn(
                                                 "w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white",
-                                                t.eventType === 'STAGE_CHANGE' ? 'bg-primary' :
-                                                    t.eventType === 'CONTRACT' ? 'bg-emerald-500' :
-                                                        t.eventType === 'CLOSED' ? 'bg-red-500' :
-                                                            t.eventType === 'BATCH' ? 'bg-purple-500' :
-                                                                t.eventType === 'COMMUNICATION' ? 'bg-blue-500' : 'bg-slate-400'
+                                                t.eventType === 'STAGE_CHANGED' || t.eventType === 'STAGE_CHANGE' ? 'bg-primary' :
+                                                    t.eventType === 'CANDIDATE_CREATED' ? 'bg-slate-500' :
+                                                        t.eventType === 'ON_HOLD' ? 'bg-gray-500' :
+                                                            t.eventType === 'ELIMINATED' || t.eventType === 'WITHDRAWN' || t.eventType === 'CLOSED' ? 'bg-red-500' :
+                                                                t.eventType === 'PLACED' ? 'bg-indigo-500' :
+                                                                    t.eventType === 'OFFERED' ? 'bg-lime-500' :
+                                                                        t.eventType === 'CONTRACT' ? 'bg-emerald-500' :
+                                                                            t.eventType === 'BATCH' ? 'bg-purple-500' :
+                                                                                t.eventType === 'COMMUNICATION' ? 'bg-blue-500' : 'bg-slate-400'
                                             )}>
-                                                {t.eventType === 'STAGE_CHANGE' && <ArrowRight className="w-3 h-3" />}
+                                                {(t.eventType === 'STAGE_CHANGED' || t.eventType === 'STAGE_CHANGE') && <ArrowRight className="w-3 h-3" />}
+                                                {t.eventType === 'CANDIDATE_CREATED' && <Plus className="w-3 h-3" />}
+                                                {t.eventType === 'ON_HOLD' && <Clock className="w-3 h-3" />}
+                                                {(t.eventType === 'ELIMINATED' || t.eventType === 'WITHDRAWN' || t.eventType === 'CLOSED') && <X className="w-3 h-3" />}
+                                                {t.eventType === 'OFFERED' && <FileText className="w-3 h-3" />}
+                                                {t.eventType === 'PLACED' && <Check className="w-3 h-3" />}
                                                 {t.eventType === 'CONTRACT' && <FileText className="w-3 h-3" />}
-                                                {t.eventType === 'CLOSED' && <X className="w-3 h-3" />}
                                                 {t.eventType === 'BATCH' && <BookOpen className="w-3 h-3" />}
                                                 {t.eventType === 'COMMUNICATION' && <Users className="w-3 h-3" />}
                                             </div>

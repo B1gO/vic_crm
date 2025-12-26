@@ -1,10 +1,13 @@
 package com.vic.crm.service;
 
+import com.vic.crm.dto.TransitionRequest;
+import com.vic.crm.entity.Batch;
 import com.vic.crm.entity.Candidate;
 import com.vic.crm.entity.TimelineEvent;
 import com.vic.crm.entity.User;
+import com.vic.crm.enums.CandidateStage;
+import com.vic.crm.enums.CandidateSubStatus;
 import com.vic.crm.enums.CloseReason;
-import com.vic.crm.enums.LifecycleStage;
 import com.vic.crm.enums.TimelineEventType;
 import com.vic.crm.exception.InvalidTransitionException;
 import com.vic.crm.exception.ResourceNotFoundException;
@@ -14,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,16 +27,69 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class CandidateService {
 
+    private static final Set<CandidateStage> NON_TERMINAL_STAGES = Set.of(
+            CandidateStage.SOURCING,
+            CandidateStage.TRAINING,
+            CandidateStage.MARKETING,
+            CandidateStage.INTERVIEWING,
+            CandidateStage.OFFERED);
+
+    private static final Map<CandidateStage, Set<CandidateStage>> ALLOWED_TRANSITIONS = Map.of(
+            CandidateStage.SOURCING, Set.of(CandidateStage.TRAINING, CandidateStage.MARKETING,
+                    CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
+            CandidateStage.TRAINING, Set.of(CandidateStage.MARKETING, CandidateStage.ELIMINATED,
+                    CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
+            CandidateStage.MARKETING, Set.of(CandidateStage.INTERVIEWING, CandidateStage.ELIMINATED,
+                    CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
+            CandidateStage.INTERVIEWING, Set.of(CandidateStage.OFFERED, CandidateStage.MARKETING,
+                    CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
+            CandidateStage.OFFERED, Set.of(CandidateStage.PLACED, CandidateStage.INTERVIEWING,
+                    CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
+            CandidateStage.PLACED, Set.of(CandidateStage.MARKETING, CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN),
+            CandidateStage.ELIMINATED, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
+                    CandidateStage.MARKETING, CandidateStage.INTERVIEWING, CandidateStage.OFFERED),
+            CandidateStage.WITHDRAWN, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
+                    CandidateStage.MARKETING, CandidateStage.INTERVIEWING, CandidateStage.OFFERED),
+            CandidateStage.ON_HOLD, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
+                    CandidateStage.MARKETING, CandidateStage.INTERVIEWING, CandidateStage.OFFERED));
+
+    private static final Map<CandidateStage, Set<CandidateSubStatus>> SUB_STATUS_BY_STAGE = Map.of(
+            CandidateStage.SOURCING, Set.of(
+                    CandidateSubStatus.SOURCED, CandidateSubStatus.CONTACTED, CandidateSubStatus.SCREENING_SCHEDULED,
+                    CandidateSubStatus.SCREENING_PASSED, CandidateSubStatus.SCREENING_FAILED,
+                    CandidateSubStatus.DIRECT_MARKETING_READY),
+            CandidateStage.TRAINING, Set.of(
+                    CandidateSubStatus.IN_TRAINING, CandidateSubStatus.HOMEWORK_PENDING,
+                    CandidateSubStatus.MOCK_IN_PROGRESS, CandidateSubStatus.TRAINING_COMPLETED),
+            CandidateStage.MARKETING, Set.of(
+                    CandidateSubStatus.RESUME_READY, CandidateSubStatus.PROFILE_PACKAGED,
+                    CandidateSubStatus.VENDOR_OUTREACH, CandidateSubStatus.SUBMITTED),
+            CandidateStage.INTERVIEWING, Set.of(
+                    CandidateSubStatus.VENDOR_SCREEN, CandidateSubStatus.CLIENT_ROUND_1,
+                    CandidateSubStatus.CLIENT_ROUND_2, CandidateSubStatus.CLIENT_ROUND_3_PLUS),
+            CandidateStage.OFFERED, Set.of(
+                    CandidateSubStatus.OFFER_PENDING, CandidateSubStatus.OFFER_ACCEPTED,
+                    CandidateSubStatus.OFFER_DECLINED),
+            CandidateStage.ON_HOLD, Set.of(
+                    CandidateSubStatus.WAITING_DOCS, CandidateSubStatus.PERSONAL_PAUSE,
+                    CandidateSubStatus.VISA_ISSUE, CandidateSubStatus.OTHER),
+            CandidateStage.PLACED, Set.of(CandidateSubStatus.PLACED_CONFIRMED),
+            CandidateStage.ELIMINATED, Set.of(CandidateSubStatus.CLOSED),
+            CandidateStage.WITHDRAWN, Set.of(CandidateSubStatus.SELF_WITHDRAWN));
+
+    private static final Map<CandidateStage, CandidateSubStatus> DEFAULT_SUB_STATUS = Map.of(
+            CandidateStage.SOURCING, CandidateSubStatus.SOURCED,
+            CandidateStage.TRAINING, CandidateSubStatus.IN_TRAINING,
+            CandidateStage.MARKETING, CandidateSubStatus.RESUME_READY,
+            CandidateStage.INTERVIEWING, CandidateSubStatus.VENDOR_SCREEN,
+            CandidateStage.OFFERED, CandidateSubStatus.OFFER_PENDING,
+            CandidateStage.ON_HOLD, CandidateSubStatus.OTHER,
+            CandidateStage.PLACED, CandidateSubStatus.PLACED_CONFIRMED,
+            CandidateStage.ELIMINATED, CandidateSubStatus.CLOSED,
+            CandidateStage.WITHDRAWN, CandidateSubStatus.SELF_WITHDRAWN);
+
     private final CandidateRepository candidateRepository;
     private final TimelineEventRepository timelineEventRepository;
-
-    // Define allowed transitions (Stage Gate rules)
-    private static final Map<LifecycleStage, Set<LifecycleStage>> ALLOWED_TRANSITIONS = Map.of(
-            LifecycleStage.RECRUITMENT, Set.of(LifecycleStage.TRAINING, LifecycleStage.ELIMINATED),
-            LifecycleStage.TRAINING, Set.of(LifecycleStage.MARKET_READY, LifecycleStage.ELIMINATED),
-            LifecycleStage.MARKET_READY, Set.of(LifecycleStage.PLACED, LifecycleStage.ELIMINATED),
-            LifecycleStage.PLACED, Set.of(),
-            LifecycleStage.ELIMINATED, Set.of());
 
     public List<Candidate> findAll() {
         return candidateRepository.findAll();
@@ -42,20 +100,23 @@ public class CandidateService {
                 .orElseThrow(() -> new ResourceNotFoundException("Candidate not found with id: " + id));
     }
 
-    public List<Candidate> findByStage(LifecycleStage stage) {
-        return candidateRepository.findByLifecycleStage(stage);
+    public List<Candidate> findByStage(CandidateStage stage) {
+        return candidateRepository.findByStage(stage);
     }
 
     @Transactional
     public Candidate create(Candidate candidate) {
-        if (candidate.getLifecycleStage() == null) {
-            candidate.setLifecycleStage(LifecycleStage.RECRUITMENT);
+        if (candidate.getStage() == null) {
+            candidate.setStage(CandidateStage.SOURCING);
         }
+        if (candidate.getSubStatus() == null) {
+            candidate.setSubStatus(DEFAULT_SUB_STATUS.get(candidate.getStage()));
+        }
+        candidate.setStageUpdatedAt(LocalDateTime.now());
         Candidate saved = candidateRepository.save(candidate);
 
-        // Create initial timeline event: Contract Signed
-        createTimelineEvent(saved, TimelineEventType.CONTRACT, "contract_signed",
-                null, null, null, "Contract Signed", "Officially onboarded.", null);
+        createTimelineEvent(saved, TimelineEventType.CANDIDATE_CREATED, "Candidate Created",
+                "Candidate record created.", null, null, null, saved.getSubStatus(), null, null, null, null);
 
         return saved;
     }
@@ -68,87 +129,278 @@ public class CandidateService {
         existing.setPhone(updated.getPhone());
         existing.setNotes(updated.getNotes());
         existing.setBatch(updated.getBatch());
+        existing.setResumeReady(updated.getResumeReady());
+        existing.setCompletionRate(updated.getCompletionRate());
         return candidateRepository.save(existing);
     }
 
-    /**
-     * Transition a candidate to a new lifecycle stage.
-     * Validates Stage Gate rules before allowing the transition.
-     */
     @Transactional
-    public Candidate transition(Long candidateId, LifecycleStage toStage, String reason, User changedBy) {
+    public Candidate transition(Long candidateId, TransitionRequest request, User actor) {
         Candidate candidate = findById(candidateId);
-        LifecycleStage fromStage = candidate.getLifecycleStage();
+        CandidateStage fromStage = candidate.getStage();
+        CandidateStage toStage = request.getToStage();
 
-        // Validate transition is allowed
+        if (toStage == null) {
+            throw new InvalidTransitionException("toStage is required");
+        }
+
         if (!isTransitionAllowed(fromStage, toStage)) {
             throw new InvalidTransitionException(
                     String.format("Transition from %s to %s is not allowed", fromStage, toStage));
         }
 
-        // Additional Stage Gate validations
-        validateStageGateRules(candidate, toStage);
+        validateTransitionRules(candidate, fromStage, toStage, request);
 
-        // Generate title based on transition
-        String title = generateTransitionTitle(toStage);
+        CandidateSubStatus nextSubStatus = request.getToSubStatus() != null
+                ? request.getToSubStatus()
+                : DEFAULT_SUB_STATUS.get(toStage);
+        if (!isSubStatusAllowed(toStage, nextSubStatus)) {
+            throw new InvalidTransitionException(
+                    String.format("SubStatus %s is not allowed for stage %s", nextSubStatus, toStage));
+        }
 
-        // Create timeline event for stage change
-        createTimelineEvent(candidate, TimelineEventType.STAGE_CHANGE, null,
-                fromStage, toStage, null, title, reason, changedBy);
+        if (toStage == CandidateStage.ON_HOLD && fromStage != CandidateStage.ON_HOLD) {
+            candidate.setLastActiveStage(fromStage);
+        }
 
-        // Update candidate stage
-        candidate.setLifecycleStage(toStage);
-        return candidateRepository.save(candidate);
-    }
+        candidate.setStage(toStage);
+        candidate.setSubStatus(nextSubStatus);
+        candidate.setStageUpdatedAt(LocalDateTime.now());
+        applyTransitionMetadata(candidate, request);
+        if (toStage == CandidateStage.ELIMINATED && !isBlank(request.getReason())) {
+            candidate.setCloseReasonNote(request.getReason());
+        }
 
-    private String generateTransitionTitle(LifecycleStage toStage) {
-        return switch (toStage) {
-            case TRAINING -> "Joined Training";
-            case MARKET_READY -> "Unlocked Marketing";
-            case PLACED -> "Placed Successfully";
-            case ELIMINATED -> "Closed";
-            default -> toStage.toString();
-        };
-    }
+        Candidate saved = candidateRepository.save(candidate);
 
-    private boolean isTransitionAllowed(LifecycleStage from, LifecycleStage to) {
-        Set<LifecycleStage> allowed = ALLOWED_TRANSITIONS.get(from);
-        return allowed != null && allowed.contains(to);
-    }
+        TimelineEventType eventType = resolveEventType(fromStage, toStage);
+        String title = generateTransitionTitle(fromStage, toStage);
 
-    private void validateStageGateRules(Candidate candidate, LifecycleStage toStage) {
-        // Stage Gate rules can be added here in the future
+        createTimelineEvent(saved, eventType, title, request.getReason(),
+                fromStage, toStage, null, nextSubStatus, request.getCloseReason(),
+                actor, null, null);
+
+        return saved;
     }
 
     public List<TimelineEvent> getTimeline(Long candidateId) {
         return timelineEventRepository.findByCandidateIdOrderByEventDateDesc(candidateId);
     }
 
-    /**
-     * Add a custom timeline event (e.g., COMMUNICATION, READINESS)
-     */
     @Transactional
-    public TimelineEvent addTimelineEvent(Long candidateId, TimelineEventType eventType,
-            String subType, String title, String description, CloseReason closeReason, User createdBy) {
+    public TimelineEvent addTimelineEvent(Long candidateId, TimelineEventType eventType, String subType,
+            String title, String description, CloseReason closeReason, CandidateSubStatus subStatus,
+            String metaJson, LocalDateTime eventDate, User actor) {
         Candidate candidate = findById(candidateId);
-        return createTimelineEvent(candidate, eventType, subType, null, null, closeReason, title, description,
-                createdBy);
+        return createTimelineEvent(candidate, eventType, title, description,
+                null, null, subType, subStatus, closeReason, actor, metaJson, eventDate);
+    }
+
+    private void validateTransitionRules(Candidate candidate, CandidateStage fromStage, CandidateStage toStage,
+            TransitionRequest request) {
+        if (toStage == CandidateStage.TRAINING) {
+            requireBatch(candidate.getBatch());
+            if (candidate.getSubStatus() != CandidateSubStatus.SCREENING_PASSED) {
+                throw new InvalidTransitionException("SCREENING_PASSED is required to enter TRAINING");
+            }
+        }
+
+        if (fromStage == CandidateStage.SOURCING && toStage == CandidateStage.MARKETING) {
+            if (candidate.getSubStatus() != CandidateSubStatus.DIRECT_MARKETING_READY) {
+                throw new InvalidTransitionException("DIRECT_MARKETING_READY is required for direct marketing");
+            }
+            validateDirectMarketingCompleteness(candidate);
+        }
+
+        if (fromStage == CandidateStage.TRAINING && toStage == CandidateStage.MARKETING) {
+            if (candidate.getResumeReady() == null || !candidate.getResumeReady()) {
+                throw new InvalidTransitionException("resumeReady must be true to enter MARKETING");
+            }
+        }
+
+        if (toStage == CandidateStage.PLACED) {
+            requireDate(request.getStartDate(), "startDate is required for PLACED");
+        }
+
+        if (toStage == CandidateStage.ELIMINATED && request.getCloseReason() == null) {
+            throw new InvalidTransitionException("closeReason is required for ELIMINATED");
+        }
+
+        if (toStage == CandidateStage.WITHDRAWN && isBlank(request.getWithdrawReason())) {
+            throw new InvalidTransitionException("withdrawReason is required for WITHDRAWN");
+        }
+
+        if (toStage == CandidateStage.ON_HOLD) {
+            if (isBlank(request.getHoldReason()) || request.getNextFollowUpAt() == null) {
+                throw new InvalidTransitionException("holdReason and nextFollowUpAt are required for ON_HOLD");
+            }
+        }
+
+        if ((fromStage == CandidateStage.ELIMINATED || fromStage == CandidateStage.WITHDRAWN)
+                && NON_TERMINAL_STAGES.contains(toStage)) {
+            if (isBlank(request.getReactivateReason())) {
+                throw new InvalidTransitionException("reactivateReason is required to reactivate a candidate");
+            }
+        }
+
+        if (fromStage == CandidateStage.ON_HOLD
+                && candidate.getLastActiveStage() != null
+                && toStage != candidate.getLastActiveStage()
+                && isBlank(request.getReason())) {
+            throw new InvalidTransitionException("reason is required to jump from ON_HOLD to a new stage");
+        }
+
+        if (fromStage == CandidateStage.INTERVIEWING && toStage == CandidateStage.MARKETING) {
+            requireReason(request.getReason(), "reason is required to return to MARKETING");
+        }
+        if (fromStage == CandidateStage.OFFERED && toStage == CandidateStage.INTERVIEWING) {
+            requireReason(request.getReason(), "reason is required to return to INTERVIEWING");
+        }
+        if (fromStage == CandidateStage.PLACED && toStage == CandidateStage.MARKETING) {
+            requireReason(request.getReason(), "reason is required to return to MARKETING");
+        }
+    }
+
+    private void applyTransitionMetadata(Candidate candidate, TransitionRequest request) {
+        if (request.getHoldReason() != null) {
+            candidate.setHoldReason(request.getHoldReason());
+        }
+        if (request.getNextFollowUpAt() != null) {
+            candidate.setNextFollowUpAt(request.getNextFollowUpAt());
+        }
+        if (request.getCloseReason() != null) {
+            candidate.setCloseReason(request.getCloseReason());
+        }
+        if (request.getWithdrawReason() != null) {
+            candidate.setWithdrawReason(request.getWithdrawReason());
+        }
+        if (request.getReactivateReason() != null) {
+            candidate.setReactivateReason(request.getReactivateReason());
+        }
+        if (request.getOfferDate() != null) {
+            candidate.setOfferDate(request.getOfferDate());
+        }
+        if (request.getStartDate() != null) {
+            candidate.setStartDate(request.getStartDate());
+        }
+    }
+
+    private void validateDirectMarketingCompleteness(Candidate candidate) {
+        if (isBlank(candidate.getName())) {
+            throw new InvalidTransitionException("name is required for direct marketing");
+        }
+        if (isBlank(candidate.getEmail()) && isBlank(candidate.getPhone())) {
+            throw new InvalidTransitionException("email or phone is required for direct marketing");
+        }
+        if (isBlank(candidate.getWorkAuth())) {
+            throw new InvalidTransitionException("workAuth is required for direct marketing");
+        }
+        if (isBlank(candidate.getTechTags())) {
+            throw new InvalidTransitionException("techTags is required for direct marketing");
+        }
+        if (isBlank(candidate.getCity()) && isBlank(candidate.getState())) {
+            throw new InvalidTransitionException("city or state is required for direct marketing");
+        }
+        if (candidate.getResumeReady() == null || !candidate.getResumeReady()) {
+            throw new InvalidTransitionException("resumeReady must be true for direct marketing");
+        }
+    }
+
+    private void requireBatch(Batch batch) {
+        if (batch == null) {
+            throw new InvalidTransitionException("batch is required for TRAINING");
+        }
+    }
+
+    private void requireDate(LocalDate date, String message) {
+        if (date == null) {
+            throw new InvalidTransitionException(message);
+        }
+    }
+
+    private void requireReason(String reason, String message) {
+        if (isBlank(reason)) {
+            throw new InvalidTransitionException(message);
+        }
+    }
+
+    private boolean isTransitionAllowed(CandidateStage from, CandidateStage to) {
+        Set<CandidateStage> allowed = ALLOWED_TRANSITIONS.get(from);
+        return allowed != null && allowed.contains(to);
+    }
+
+    private boolean isSubStatusAllowed(CandidateStage stage, CandidateSubStatus subStatus) {
+        Set<CandidateSubStatus> allowed = SUB_STATUS_BY_STAGE.get(stage);
+        return allowed != null && allowed.contains(subStatus);
+    }
+
+    private TimelineEventType resolveEventType(CandidateStage fromStage, CandidateStage toStage) {
+        if (toStage == CandidateStage.ON_HOLD) {
+            return TimelineEventType.ON_HOLD;
+        }
+        if (toStage == CandidateStage.ELIMINATED) {
+            return TimelineEventType.ELIMINATED;
+        }
+        if (toStage == CandidateStage.WITHDRAWN) {
+            return TimelineEventType.WITHDRAWN;
+        }
+        if (toStage == CandidateStage.OFFERED) {
+            return TimelineEventType.OFFERED;
+        }
+        if (toStage == CandidateStage.PLACED) {
+            return TimelineEventType.PLACED;
+        }
+        if (fromStage == CandidateStage.ELIMINATED || fromStage == CandidateStage.WITHDRAWN) {
+            return TimelineEventType.REACTIVATED;
+        }
+        return TimelineEventType.STAGE_CHANGED;
+    }
+
+    private String generateTransitionTitle(CandidateStage fromStage, CandidateStage toStage) {
+        if (toStage == CandidateStage.ON_HOLD) {
+            return "Placed On Hold";
+        }
+        if (toStage == CandidateStage.ELIMINATED) {
+            return "Closed";
+        }
+        if (toStage == CandidateStage.WITHDRAWN) {
+            return "Withdrawn";
+        }
+        if (fromStage == CandidateStage.ELIMINATED || fromStage == CandidateStage.WITHDRAWN) {
+            return "Reactivated";
+        }
+        return switch (toStage) {
+            case TRAINING -> "Joined Training";
+            case MARKETING -> "Entered Marketing";
+            case INTERVIEWING -> "Started Interviewing";
+            case OFFERED -> "Offer Received";
+            case PLACED -> "Placed Successfully";
+            default -> toStage.toString();
+        };
     }
 
     private TimelineEvent createTimelineEvent(Candidate candidate, TimelineEventType eventType,
-            String subType, LifecycleStage fromStage, LifecycleStage toStage, CloseReason closeReason,
-            String title, String description, User createdBy) {
+            String title, String description, CandidateStage fromStage, CandidateStage toStage,
+            String subType, CandidateSubStatus subStatus, CloseReason closeReason, User createdBy,
+            String metaJson, LocalDateTime eventDate) {
         TimelineEvent event = TimelineEvent.builder()
                 .candidate(candidate)
                 .eventType(eventType)
                 .subType(subType)
-                .fromStage(fromStage)
-                .toStage(toStage)
-                .closeReason(closeReason)
                 .title(title)
                 .description(description)
+                .fromStage(fromStage)
+                .toStage(toStage)
+                .subStatus(subStatus)
+                .closeReason(closeReason)
                 .createdBy(createdBy)
+                .metaJson(metaJson)
+                .eventDate(eventDate)
                 .build();
         return timelineEventRepository.save(event);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

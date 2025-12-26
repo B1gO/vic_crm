@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils"
-import { LifecycleStage } from "@/lib/api"
+import { CandidateStage } from "@/lib/api"
 
 interface BadgeProps {
     children: React.ReactNode;
@@ -25,23 +25,31 @@ export function Badge({ children, variant = 'default', className }: BadgeProps) 
     )
 }
 
-const stageStyles: Record<LifecycleStage, string> = {
-    RECRUITMENT: "bg-blue-100 text-blue-800",
+const stageStyles: Record<CandidateStage, string> = {
+    SOURCING: "bg-blue-100 text-blue-800",
     TRAINING: "bg-amber-100 text-amber-800",
-    MARKET_READY: "bg-emerald-100 text-emerald-800",
+    MARKETING: "bg-emerald-100 text-emerald-800",
+    INTERVIEWING: "bg-sky-100 text-sky-800",
+    OFFERED: "bg-lime-100 text-lime-800",
     PLACED: "bg-indigo-100 text-indigo-800",
     ELIMINATED: "bg-red-100 text-red-800",
+    WITHDRAWN: "bg-rose-100 text-rose-800",
+    ON_HOLD: "bg-gray-100 text-gray-800",
 };
 
-const stageLabels: Record<LifecycleStage, string> = {
-    RECRUITMENT: "Recruitment",
+const stageLabels: Record<CandidateStage, string> = {
+    SOURCING: "Sourcing",
     TRAINING: "Training",
-    MARKET_READY: "Market Ready",
+    MARKETING: "Marketing",
+    INTERVIEWING: "Interviewing",
+    OFFERED: "Offered",
     PLACED: "Placed",
     ELIMINATED: "Eliminated",
+    WITHDRAWN: "Withdrawn",
+    ON_HOLD: "On Hold",
 };
 
-export function StageBadge({ stage }: { stage: LifecycleStage }) {
+export function StageBadge({ stage }: { stage: CandidateStage }) {
     return (
         <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", stageStyles[stage])}>
             {stageLabels[stage]}

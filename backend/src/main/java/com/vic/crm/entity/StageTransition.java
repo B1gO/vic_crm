@@ -1,6 +1,6 @@
 package com.vic.crm.entity;
 
-import com.vic.crm.enums.LifecycleStage;
+import com.vic.crm.enums.CandidateStage;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,11 +27,11 @@ public class StageTransition {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LifecycleStage fromStage;
+    private CandidateStage fromStage;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LifecycleStage toStage;
+    private CandidateStage toStage;
 
     private String reason;
 

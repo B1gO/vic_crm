@@ -84,9 +84,10 @@ post_json "/api/candidates" '{
   "school":"UC Berkeley",
   "major":"MS Computer Science",
   "relocation":true,
+  "resumeReady":true,
   "notes":"Strong background in distributed systems. Previous intern at Google.",
-  "lifecycleStage":"TRAINING",
-  "recruitmentStatus":"SCREENING_PASSED",
+  "stage":"TRAINING",
+  "subStatus":"IN_TRAINING",
   "batch":{"id":1},
   "recruiter":{"id":1}
 }'
@@ -107,8 +108,8 @@ post_json "/api/candidates" '{
   "major":"BS Software Engineering",
   "relocation":false,
   "notes":"5 years experience in Java/Spring Boot. Looking for backend roles.",
-  "lifecycleStage":"RECRUITMENT",
-  "recruitmentStatus":"SCREENING_SCHEDULED",
+  "stage":"SOURCING",
+  "subStatus":"SCREENING_SCHEDULED",
   "batch":{"id":1},
   "recruiter":{"id":1}
 }'
@@ -129,8 +130,8 @@ post_json "/api/candidates" '{
   "major":"MS Information Systems",
   "relocation":true,
   "notes":"Frontend specialist. Strong React/TypeScript skills. Previous experience at Meta.",
-  "lifecycleStage":"RECRUITMENT",
-  "recruitmentStatus":"SOURCED",
+  "stage":"SOURCING",
+  "subStatus":"SOURCED",
   "recruiter":{"id":1}
 }'
 
@@ -150,8 +151,8 @@ post_json "/api/candidates" '{
   "major":"MS Computer Engineering",
   "relocation":true,
   "notes":"Full-stack developer. Focused on React and Node.js.",
-  "lifecycleStage":"MARKET_READY",
-  "recruitmentStatus":"DIRECT_MARKETING",
+  "stage":"MARKETING",
+  "subStatus":"RESUME_READY",
   "recruiter":{"id":4}
 }'
 
@@ -166,8 +167,8 @@ post_json "/api/candidates" '{
   "school":"Northwestern",
   "major":"MS Data Science",
   "notes":"Just contacted via LinkedIn. Strong ML background.",
-  "lifecycleStage":"RECRUITMENT",
-  "recruitmentStatus":"SOURCED",
+  "stage":"SOURCING",
+  "subStatus":"SOURCED",
   "recruiter":{"id":1}
 }'
 
@@ -180,9 +181,30 @@ post_json "/api/candidates" '{
   "city":"Seattle",
   "state":"WA",
   "notes":"Screening interview did not go well. Lacks communication skills.",
-  "lifecycleStage":"ELIMINATED",
-  "recruitmentStatus":"SCREENING_FAILED",
+  "stage":"ELIMINATED",
+  "subStatus":"CLOSED",
+  "closeReason":"NO_RESPONSE",
   "recruiter":{"id":4}
+}'
+
+# Candidate 7: Nina - Training, resume not ready (for validation failure case)
+post_json "/api/candidates" '{
+  "name":"Nina",
+  "email":"nina@gmail.com",
+  "phone":"+1 (212) 555-0333",
+  "wechatName":"Nina",
+  "workAuth":"OPT",
+  "city":"New York",
+  "state":"NY",
+  "school":"NYU",
+  "major":"MS Software Engineering",
+  "relocation":false,
+  "resumeReady":false,
+  "notes":"Training in progress, resume not finalized yet.",
+  "stage":"TRAINING",
+  "subStatus":"IN_TRAINING",
+  "batch":{"id":1},
+  "recruiter":{"id":1}
 }'
 
 # Timeline events (candidate IDs assumed 1..6)
@@ -191,7 +213,7 @@ post_json "/api/candidates/1/timeline" '{
   "subType":"screening_passed",
   "title":"Screening Passed",
   "description":"Candidate passed initial screening.",
-  "createdById":1
+  "actorId":1
 }'
 
 post_json "/api/candidates/1/timeline" '{
@@ -199,7 +221,7 @@ post_json "/api/candidates/1/timeline" '{
   "subType":"batch_assigned",
   "title":"Assigned to Batch",
   "description":"Assigned to Java 202601.",
-  "createdById":2
+  "actorId":2
 }'
 
 post_json "/api/candidates/1/timeline" '{
@@ -207,7 +229,7 @@ post_json "/api/candidates/1/timeline" '{
   "subType":"resume_ready",
   "title":"Resume Ready",
   "description":"Resume finalized for marketing.",
-  "createdById":3
+  "actorId":3
 }'
 
 post_json "/api/candidates/2/timeline" '{
@@ -215,7 +237,7 @@ post_json "/api/candidates/2/timeline" '{
   "subType":"screening_scheduled",
   "title":"Screening Scheduled",
   "description":"Screening scheduled for next week.",
-  "createdById":1
+  "actorId":1
 }'
 
 post_json "/api/candidates/3/timeline" '{
@@ -223,7 +245,7 @@ post_json "/api/candidates/3/timeline" '{
   "subType":"outreach",
   "title":"Initial Outreach",
   "description":"Sent introductory email.",
-  "createdById":1
+  "actorId":1
 }'
 
 post_json "/api/candidates/4/timeline" '{
@@ -231,7 +253,7 @@ post_json "/api/candidates/4/timeline" '{
   "subType":"vendor_submit",
   "title":"Submitted to Vendor",
   "description":"Submitted to Infobahn.",
-  "createdById":4
+  "actorId":4
 }'
 
 post_json "/api/candidates/4/timeline" '{
@@ -239,7 +261,7 @@ post_json "/api/candidates/4/timeline" '{
   "subType":"client_round_1",
   "title":"Client Round 1",
   "description":"Client round 1 scheduled.",
-  "createdById":4
+  "actorId":4
 }'
 
 post_json "/api/candidates/5/timeline" '{
@@ -247,7 +269,7 @@ post_json "/api/candidates/5/timeline" '{
   "subType":"contacted",
   "title":"Contacted",
   "description":"Reached out via LinkedIn.",
-  "createdById":1
+  "actorId":1
 }'
 
 post_json "/api/candidates/6/timeline" '{
@@ -256,7 +278,7 @@ post_json "/api/candidates/6/timeline" '{
   "title":"Closed",
   "description":"Candidate unresponsive after screening.",
   "closeReason":"NO_RESPONSE",
-  "createdById":4
+  "actorId":4
 }'
 
 echo "Seed complete."

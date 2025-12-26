@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Candidate, WorkAuth, RecruitmentStatus } from '@/lib/api';
+import { Candidate, CandidateSubStatus, WorkAuth } from '@/lib/api';
 import { StageBadge } from '@/components/ui/badge';
 import { ChevronRight } from 'lucide-react';
 
@@ -14,20 +14,48 @@ const workAuthLabels: Record<WorkAuth, string> = {
     OTHER: 'Other',
 };
 
-const recruitmentStatusLabels: Record<RecruitmentStatus, string> = {
+const subStatusLabels: Partial<Record<CandidateSubStatus, string>> = {
     SOURCED: 'Sourced',
+    CONTACTED: 'Contacted',
     SCREENING_SCHEDULED: 'Screening',
     SCREENING_PASSED: 'Passed',
     SCREENING_FAILED: 'Failed',
-    DIRECT_MARKETING: 'Direct Mkt',
+    DIRECT_MARKETING_READY: 'Direct Mkt',
+    IN_TRAINING: 'In Training',
+    TRAINING_COMPLETED: 'Training Done',
+    RESUME_READY: 'Resume Ready',
+    VENDOR_OUTREACH: 'Vendor Outreach',
+    SUBMITTED: 'Submitted',
+    VENDOR_SCREEN: 'Vendor Screen',
+    CLIENT_ROUND_1: 'Client R1',
+    OFFER_PENDING: 'Offer Pending',
+    OFFER_ACCEPTED: 'Offer Accepted',
+    OFFER_DECLINED: 'Offer Declined',
+    PLACED_CONFIRMED: 'Placed',
+    CLOSED: 'Closed',
+    SELF_WITHDRAWN: 'Withdrawn',
 };
 
-const recruitmentStatusColors: Record<RecruitmentStatus, string> = {
+const subStatusColors: Partial<Record<CandidateSubStatus, string>> = {
     SOURCED: 'bg-gray-500/20 text-gray-400',
+    CONTACTED: 'bg-slate-500/20 text-slate-400',
     SCREENING_SCHEDULED: 'bg-blue-500/20 text-blue-400',
     SCREENING_PASSED: 'bg-green-500/20 text-green-400',
     SCREENING_FAILED: 'bg-red-500/20 text-red-400',
-    DIRECT_MARKETING: 'bg-purple-500/20 text-purple-400',
+    DIRECT_MARKETING_READY: 'bg-purple-500/20 text-purple-400',
+    IN_TRAINING: 'bg-amber-500/20 text-amber-500',
+    TRAINING_COMPLETED: 'bg-emerald-500/20 text-emerald-500',
+    RESUME_READY: 'bg-emerald-500/20 text-emerald-500',
+    VENDOR_OUTREACH: 'bg-cyan-500/20 text-cyan-500',
+    SUBMITTED: 'bg-indigo-500/20 text-indigo-500',
+    VENDOR_SCREEN: 'bg-blue-500/20 text-blue-500',
+    CLIENT_ROUND_1: 'bg-sky-500/20 text-sky-500',
+    OFFER_PENDING: 'bg-lime-500/20 text-lime-500',
+    OFFER_ACCEPTED: 'bg-green-600/20 text-green-600',
+    OFFER_DECLINED: 'bg-rose-500/20 text-rose-500',
+    PLACED_CONFIRMED: 'bg-indigo-600/20 text-indigo-600',
+    CLOSED: 'bg-red-600/20 text-red-600',
+    SELF_WITHDRAWN: 'bg-rose-600/20 text-rose-600',
 };
 
 interface CandidateTableProps {
@@ -67,14 +95,14 @@ export function CandidateTable({ candidates, emptyMessage = 'No candidates yet' 
                             </Link>
                         </td>
                         <td className="p-4">
-                            {candidate.recruitmentStatus && (
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${recruitmentStatusColors[candidate.recruitmentStatus]}`}>
-                                    {recruitmentStatusLabels[candidate.recruitmentStatus]}
+                            {candidate.subStatus && (
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${subStatusColors[candidate.subStatus] || 'bg-gray-500/20 text-gray-400'}`}>
+                                    {subStatusLabels[candidate.subStatus] || candidate.subStatus.replace(/_/g, ' ')}
                                 </span>
                             )}
                         </td>
                         <td className="p-4">
-                            <StageBadge stage={candidate.lifecycleStage} />
+                            <StageBadge stage={candidate.stage} />
                         </td>
                         <td className="p-4 text-sm text-muted-foreground">
                             {candidate.batch?.name || '-'}
