@@ -127,10 +127,8 @@ SOURCING=SOURCED, TRAINING=IN_TRAINING, MARKETING=RESUME_READY, INTERVIEWING=VEN
 OFFERED=OFFER_PENDING, ON_HOLD=OTHER, PLACED=PLACED_CONFIRMED, ELIMINATED=CLOSED, WITHDRAWN=SELF_WITHDRAWN.
 
 ## 5. SubStatus Progression Scenarios (All Cases)
-Note: The UI does not currently allow changing subStatus directly. SubStatus can only be set when entering a stage
-(via `toSubStatus` in the transition API). There is no “same-stage subStatus update” endpoint today, so sequential
-progression (e.g., SOURCED -> CONTACTED -> SCREENING_SCHEDULED -> SCREENING_PASSED) must be validated by
-re-entering the stage or by creating a fresh candidate per subStatus value.
+Note: SubStatus can be updated via the API and the candidate detail UI. The UI only updates subStatus for the
+current stage; for full coverage of all values and stage permutations, use the API sequences below.
 
 ### 5.1 SOURCING SubStatus Coverage (All Values)
 Values: SOURCED, CONTACTED, SCREENING_SCHEDULED, SCREENING_PASSED, SCREENING_FAILED, DIRECT_MARKETING_READY
@@ -465,7 +463,8 @@ Steps:
 Expected: eventType is ON_HOLD / ELIMINATED / WITHDRAWN / OFFERED / PLACED / REACTIVATED accordingly. Each event contains fromStage/toStage/subStatus.
 
 ## 9. Detailed UI Test Cases (All Scenarios)
-UI only supports stage transitions (subStatus is API-only for now). Use API for subStatus coverage in section 5.
+UI supports stage transitions and subStatus updates on the candidate detail page. Use API for full subStatus coverage
+in section 5 when you need all values across all stages.
 
 UI-01 Dashboard stage cards
 Steps:
@@ -554,6 +553,13 @@ UI-15 Timeline rendering
 Steps:
 1) Open any candidate with 3+ events.
 Expected: timeline shows event date, title, description; icons align with eventType (stage change, offered, placed, eliminated, on hold).
+
+UI-16 Sub-status update (current stage)
+Steps:
+1) Open any candidate detail.
+2) In Market Entry Gate, select a different Sub-status.
+3) Click Update Sub-status.
+Expected: subStatus chip updates; timeline adds SUBSTATUS_CHANGED event; inline error shows if invalid.
 
 ## 10. Pass/Fail Criteria
 PASS if all required transitions succeed, invalid transitions are blocked with correct error messages, timeline events are created and rendered correctly, and UI reflects stage/subStatus consistently.

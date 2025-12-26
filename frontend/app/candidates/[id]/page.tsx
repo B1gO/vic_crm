@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, Candidate, TimelineEvent, CandidateStage, CloseReason, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch } from '@/lib/api';
+import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
@@ -36,6 +36,18 @@ const allowedTransitions: Record<CandidateStage, CandidateStage[]> = {
     ELIMINATED: ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'],
     WITHDRAWN: ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'],
     ON_HOLD: ['SOURCING', 'TRAINING', 'MARKETING', 'INTERVIEWING', 'OFFERED'],
+};
+
+const subStatusOptionsByStage: Record<CandidateStage, CandidateSubStatus[]> = {
+    SOURCING: ['SOURCED', 'CONTACTED', 'SCREENING_SCHEDULED', 'SCREENING_PASSED', 'SCREENING_FAILED', 'DIRECT_MARKETING_READY'],
+    TRAINING: ['IN_TRAINING', 'HOMEWORK_PENDING', 'MOCK_IN_PROGRESS', 'TRAINING_COMPLETED'],
+    MARKETING: ['RESUME_READY', 'PROFILE_PACKAGED', 'VENDOR_OUTREACH', 'SUBMITTED'],
+    INTERVIEWING: ['VENDOR_SCREEN', 'CLIENT_ROUND_1', 'CLIENT_ROUND_2', 'CLIENT_ROUND_3_PLUS'],
+    OFFERED: ['OFFER_PENDING', 'OFFER_ACCEPTED', 'OFFER_DECLINED'],
+    ON_HOLD: ['WAITING_DOCS', 'PERSONAL_PAUSE', 'VISA_ISSUE', 'OTHER'],
+    PLACED: ['PLACED_CONFIRMED'],
+    ELIMINATED: ['CLOSED'],
+    WITHDRAWN: ['SELF_WITHDRAWN'],
 };
 
 const workAuthLabels: Record<WorkAuth, string> = {
@@ -79,6 +91,9 @@ export default function CandidateDetailPage() {
     const [uploadForm, setUploadForm] = useState({ documentType: 'RESUME' as DocumentType, notes: '', file: null as File | null });
     const [showEditProfile, setShowEditProfile] = useState(false);
     const [batches, setBatches] = useState<Batch[]>([]);
+    const [selectedSubStatus, setSelectedSubStatus] = useState<CandidateSubStatus | ''>('');
+    const [subStatusReason, setSubStatusReason] = useState('');
+    const [subStatusUpdating, setSubStatusUpdating] = useState(false);
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [submitFormData, setSubmitFormData] = useState({
         vendorId: '',
@@ -117,6 +132,12 @@ export default function CandidateDetailPage() {
                 .finally(() => setLoading(false));
         }
     }, [id]);
+
+    useEffect(() => {
+        if (candidate) {
+            setSelectedSubStatus(candidate.subStatus);
+        }
+    }, [candidate]);
 
     const handleSubmitToVendor = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -250,6 +271,27 @@ export default function CandidateDetailPage() {
             setTransitionError(message);
         } finally {
             setTransitioning(false);
+        }
+    };
+
+    const handleSubStatusUpdate = async () => {
+        if (!candidate || !selectedSubStatus) return;
+        setTransitionError(null);
+        setSubStatusUpdating(true);
+        try {
+            const updated = await candidatesApi.updateSubStatus(candidate.id, {
+                subStatus: selectedSubStatus,
+                reason: subStatusReason || undefined,
+            });
+            setCandidate(updated);
+            const newTimeline = await candidatesApi.getTimeline(id);
+            setTimeline(newTimeline);
+            setSubStatusReason('');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Sub-status update failed';
+            setTransitionError(message);
+        } finally {
+            setSubStatusUpdating(false);
         }
     };
 
@@ -422,6 +464,35 @@ export default function CandidateDetailPage() {
                                 </div>
                                 <span className="text-sm font-medium">{candidate.completionRate || 0}%</span>
                             </div>
+                            <div className="pt-3 border-t space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                    Sub-status
+                                </label>
+                                <select
+                                    value={selectedSubStatus}
+                                    onChange={e => setSelectedSubStatus(e.target.value as CandidateSubStatus)}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                >
+                                    {(subStatusOptionsByStage[candidate.stage] || []).map(option => (
+                                        <option key={option} value={option}>
+                                            {option.replace(/_/g, ' ')}
+                                        </option>
+                                    ))}
+                                </select>
+                                <input
+                                    value={subStatusReason}
+                                    onChange={e => setSubStatusReason(e.target.value)}
+                                    placeholder="Reason (optional)"
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                />
+                                <Button
+                                    variant="outline"
+                                    onClick={handleSubStatusUpdate}
+                                    disabled={subStatusUpdating || selectedSubStatus === candidate.subStatus}
+                                >
+                                    Update Sub-status
+                                </Button>
+                            </div>
 
                             {nextStages.length > 0 && (
                                 <div className="pt-3 border-t space-y-2">
@@ -463,6 +534,7 @@ export default function CandidateDetailPage() {
                                             <div className={cn(
                                                 "w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white",
                                                 t.eventType === 'STAGE_CHANGED' || t.eventType === 'STAGE_CHANGE' ? 'bg-primary' :
+                                                    t.eventType === 'SUBSTATUS_CHANGED' ? 'bg-sky-500' :
                                                     t.eventType === 'CANDIDATE_CREATED' ? 'bg-slate-500' :
                                                         t.eventType === 'ON_HOLD' ? 'bg-gray-500' :
                                                             t.eventType === 'ELIMINATED' || t.eventType === 'WITHDRAWN' || t.eventType === 'CLOSED' ? 'bg-red-500' :
@@ -473,6 +545,7 @@ export default function CandidateDetailPage() {
                                                                                 t.eventType === 'COMMUNICATION' ? 'bg-blue-500' : 'bg-slate-400'
                                             )}>
                                                 {(t.eventType === 'STAGE_CHANGED' || t.eventType === 'STAGE_CHANGE') && <ArrowRight className="w-3 h-3" />}
+                                                {t.eventType === 'SUBSTATUS_CHANGED' && <Pencil className="w-3 h-3" />}
                                                 {t.eventType === 'CANDIDATE_CREATED' && <Plus className="w-3 h-3" />}
                                                 {t.eventType === 'ON_HOLD' && <Clock className="w-3 h-3" />}
                                                 {(t.eventType === 'ELIMINATED' || t.eventType === 'WITHDRAWN' || t.eventType === 'CLOSED') && <X className="w-3 h-3" />}

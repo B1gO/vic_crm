@@ -183,6 +183,32 @@ public class CandidateService {
         return saved;
     }
 
+    @Transactional
+    public Candidate updateSubStatus(Long candidateId, CandidateSubStatus subStatus, String reason, User actor) {
+        Candidate candidate = findById(candidateId);
+        CandidateStage stage = candidate.getStage();
+
+        if (subStatus == null) {
+            throw new InvalidTransitionException("subStatus is required");
+        }
+        if (!isSubStatusAllowed(stage, subStatus)) {
+            throw new InvalidTransitionException(
+                    String.format("SubStatus %s is not allowed for stage %s", subStatus, stage));
+        }
+        if (candidate.getSubStatus() == subStatus) {
+            return candidate;
+        }
+
+        candidate.setSubStatus(subStatus);
+        Candidate saved = candidateRepository.save(candidate);
+
+        String title = String.format("Sub-status set to %s", subStatus);
+        createTimelineEvent(saved, TimelineEventType.SUBSTATUS_CHANGED, title, reason,
+                stage, stage, null, subStatus, null, actor, null, null);
+
+        return saved;
+    }
+
     public List<TimelineEvent> getTimeline(Long candidateId) {
         return timelineEventRepository.findByCandidateIdOrderByEventDateDesc(candidateId);
     }

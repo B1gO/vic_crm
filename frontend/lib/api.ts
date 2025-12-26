@@ -66,6 +66,15 @@ export const candidatesApi = {
             method: 'POST',
             body: JSON.stringify(payload)
         }),
+    updateSubStatus: (id: number, payload: {
+        subStatus: CandidateSubStatus;
+        reason?: string;
+        actorId?: number;
+    }) =>
+        fetchApi<Candidate>(`/api/candidates/${id}/substatus`, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        }),
     getTimeline: (id: number) => fetchApi<TimelineEvent[]>(`/api/candidates/${id}/timeline`),
     getTransitions: (id: number) => fetchApi<TimelineEvent[]>(`/api/candidates/${id}/timeline`),
 };

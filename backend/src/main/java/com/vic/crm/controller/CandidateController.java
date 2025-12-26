@@ -1,5 +1,6 @@
 package com.vic.crm.controller;
 
+import com.vic.crm.dto.SubStatusUpdateRequest;
 import com.vic.crm.dto.TimelineEventRequest;
 import com.vic.crm.dto.TransitionRequest;
 import com.vic.crm.entity.Candidate;
@@ -53,6 +54,15 @@ public class CandidateController {
             actor = userService.findById(request.getActorId());
         }
         return candidateService.transition(id, request, actor);
+    }
+
+    @PostMapping("/{id}/substatus")
+    public Candidate updateSubStatus(@PathVariable Long id, @RequestBody SubStatusUpdateRequest request) {
+        User actor = null;
+        if (request.getActorId() != null) {
+            actor = userService.findById(request.getActorId());
+        }
+        return candidateService.updateSubStatus(id, request.getSubStatus(), request.getReason(), actor);
     }
 
     @GetMapping("/{id}/timeline")
