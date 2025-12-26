@@ -98,7 +98,6 @@ public class Candidate {
 
     // Readiness flags
     private Boolean resumeReady;
-    private Integer completionRate;
 
     // Notes
     @Column(columnDefinition = "TEXT")

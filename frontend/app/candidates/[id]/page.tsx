@@ -28,19 +28,21 @@ const statusLabels: Record<string, string> = {
 
 const allowedTransitions: Record<CandidateStage, CandidateStage[]> = {
     SOURCING: ['TRAINING', 'MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
-    TRAINING: ['MOCKING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    TRAINING: ['RESUME', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
+    RESUME: ['MOCKING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
     MOCKING: ['MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
     MARKETING: ['OFFERED', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
     OFFERED: ['PLACED', 'MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
     PLACED: ['MARKETING', 'ELIMINATED', 'WITHDRAWN'],
-    ELIMINATED: ['SOURCING', 'TRAINING', 'MOCKING', 'MARKETING', 'OFFERED'],
-    WITHDRAWN: ['SOURCING', 'TRAINING', 'MOCKING', 'MARKETING', 'OFFERED'],
-    ON_HOLD: ['SOURCING', 'TRAINING', 'MOCKING', 'MARKETING', 'OFFERED'],
+    ELIMINATED: ['SOURCING', 'TRAINING', 'RESUME', 'MOCKING', 'MARKETING', 'OFFERED'],
+    WITHDRAWN: ['SOURCING', 'TRAINING', 'RESUME', 'MOCKING', 'MARKETING', 'OFFERED'],
+    ON_HOLD: ['SOURCING', 'TRAINING', 'RESUME', 'MOCKING', 'MARKETING', 'OFFERED'],
 };
 
 const stageOrder: CandidateStage[] = [
     'SOURCING',
     'TRAINING',
+    'RESUME',
     'MOCKING',
     'MARKETING',
     'OFFERED',
@@ -63,6 +65,7 @@ const subStatusOptionsByStage: Record<CandidateStage, CandidateSubStatus[]> = {
         'DIRECT_MARKETING_READY',
     ],
     TRAINING: ['IN_TRAINING'],
+    RESUME: ['RESUME_PREPARING', 'RESUME_READY'],
     MOCKING: [
         'MOCK_THEORY_READY',
         'MOCK_THEORY_SCHEDULED',
@@ -280,7 +283,7 @@ export default function CandidateDetailPage() {
         }
 
         if ((candidate.stage === 'ELIMINATED' || candidate.stage === 'WITHDRAWN')
-            && ['SOURCING', 'TRAINING', 'MOCKING', 'MARKETING', 'OFFERED'].includes(toStage)) {
+            && ['SOURCING', 'TRAINING', 'RESUME', 'MOCKING', 'MARKETING', 'OFFERED'].includes(toStage)) {
             const reactivateReason = promptValue('Reactivate reason:');
             if (!reactivateReason) return;
             payload.reactivateReason = reactivateReason;
@@ -497,22 +500,6 @@ export default function CandidateDetailPage() {
                                     </div>
                                 </div>
                             )}
-                            <div className="flex items-center gap-3">
-                                <div className={cn("w-5 h-5 rounded flex items-center justify-center text-white text-xs",
-                                    candidate.resumeReady ? "bg-emerald-500" : "bg-muted")}>
-                                    {candidate.resumeReady && <Check className="w-3 h-3" />}
-                                </div>
-                                <span className={candidate.resumeReady ? "" : "text-muted-foreground"}>Resume Finalized</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-5 h-5 rounded bg-muted flex items-center justify-center text-xs">
-                                        <Clock className="w-3 h-3" />
-                                    </div>
-                                    <span className="text-muted-foreground">Completion Rate</span>
-                                </div>
-                                <span className="text-sm font-medium">{candidate.completionRate || 0}%</span>
-                            </div>
                             <div className="pt-3 border-t space-y-2">
                                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                                     Stage / Sub-status

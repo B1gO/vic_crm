@@ -1,7 +1,7 @@
 # Candidate Lifecycle Requirements (Revised)
 
 ## Stages
-SOURCING -> TRAINING -> MOCKING -> MARKETING -> OFFERED -> PLACED
+SOURCING -> TRAINING -> RESUME -> MOCKING -> MARKETING -> OFFERED -> PLACED
 Terminal: ELIMINATED / WITHDRAWN
 Overlay: ON_HOLD (can pause any non-terminal stage)
 
@@ -24,17 +24,28 @@ Rules:
 - Screening Mock scheduled -> SCREENING_SCHEDULED
 - Screening Mock result: Strong Hire/Hire -> SCREENING_PASSED, otherwise SCREENING_FAILED
 - Batch assignment allowed even if screening not passed
+- resumeReady required for direct marketing into MARKETING
 
 ### TRAINING
 Purpose: active training period.
 SubStatus: (none required) optional default: IN_TRAINING
 Rules:
 - Batch start event moves candidates in that batch into TRAINING
-- Batch end event moves only TRAINING candidates into MOCKING
+- Batch end event moves only TRAINING candidates into RESUME
 - ON_HOLD candidates stay ON_HOLD
 
+### RESUME
+Purpose: resume preparation between training and mocking.
+SubStatus:
+- RESUME_PREPARING
+- RESUME_READY
+Rules:
+- Resume stage default subStatus is RESUME_PREPARING
+- Resume ready required to enter MOCKING
+- resumeReady flag should mirror RESUME_READY (no extra subStatus)
+
 ### MOCKING (Post-Training)
-Purpose: resume prep + mock evaluation (theory then real).
+Purpose: mock evaluation (theory then real).
 SubStatus:
 - MOCK_THEORY_READY (default when entering MOCKING; eligible to schedule theory mock)
 - MOCK_THEORY_SCHEDULED
@@ -49,7 +60,6 @@ Rules:
 - Complete Theory Mock: Strong Hire/Hire -> MOCK_THEORY_PASSED; else MOCK_THEORY_FAILED
 - Create Real Mock only if MOCK_THEORY_PASSED -> MOCK_REAL_SCHEDULED
 - Complete Real Mock: Strong Hire/Hire -> MOCK_REAL_PASSED and auto-transition to MARKETING; else MOCK_REAL_FAILED
-- Resume prep tracked by resumeReady flag + timeline event
 
 ### MARKETING
 Purpose: vendor/client submissions and interview pipeline. No subStatus (timeline only).
@@ -107,7 +117,11 @@ SubStatus:
 ### Batch
 - Assign batch (candidate.batch set): subStatus -> BATCH_ASSIGNED (no screening requirement)
 - Batch start: all candidates in batch -> TRAINING
-- Batch end: only TRAINING candidates -> MOCKING (subStatus -> MOCK_THEORY_READY)
+- Batch end: only TRAINING candidates -> RESUME (subStatus -> RESUME_PREPARING)
+
+### Resume Readiness
+- Resume prep is a RESUME stage with subStatus (RESUME_PREPARING / RESUME_READY)
+- resumeReady flag mirrors RESUME_READY and is required for direct marketing entry into MARKETING
 
 ### Mocking
 - Create Theory Mock -> MOCK_THEORY_SCHEDULED

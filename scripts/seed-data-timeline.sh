@@ -86,8 +86,8 @@ post_json "/api/candidates" '{
   "relocation":true,
   "resumeReady":true,
   "notes":"Strong background in distributed systems. Previous intern at Google.",
-  "stage":"TRAINING",
-  "subStatus":"IN_TRAINING",
+  "stage":"RESUME",
+  "subStatus":"RESUME_READY",
   "batch":{"id":1},
   "recruiter":{"id":1}
 }'
@@ -187,7 +187,7 @@ post_json "/api/candidates" '{
   "recruiter":{"id":4}
 }'
 
-# Candidate 7: Nina - Training, resume not ready (for validation failure case)
+# Candidate 7: Nina - Resume prep, not ready (for validation failure case)
 post_json "/api/candidates" '{
   "name":"Nina",
   "email":"nina@gmail.com",
@@ -200,9 +200,9 @@ post_json "/api/candidates" '{
   "major":"MS Software Engineering",
   "relocation":false,
   "resumeReady":false,
-  "notes":"Training in progress, resume not finalized yet.",
-  "stage":"TRAINING",
-  "subStatus":"IN_TRAINING",
+  "notes":"Resume preparation in progress.",
+  "stage":"RESUME",
+  "subStatus":"RESUME_PREPARING",
   "batch":{"id":1},
   "recruiter":{"id":1}
 }'

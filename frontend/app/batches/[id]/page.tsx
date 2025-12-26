@@ -106,7 +106,7 @@ export default function BatchDetailPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-5 gap-4">
                 <Card>
                     <CardContent className="p-4">
                         <div className="text-2xl font-bold">{candidates.length}</div>
@@ -119,6 +119,14 @@ export default function BatchDetailPage() {
                             {candidates.filter(c => c.stage === 'TRAINING').length}
                         </div>
                         <div className="text-sm text-muted-foreground">In Training</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="p-4">
+                        <div className="text-2xl font-bold text-sky-600">
+                            {candidates.filter(c => c.stage === 'RESUME').length}
+                        </div>
+                        <div className="text-sm text-muted-foreground">Resume Prep</div>
                     </CardContent>
                 </Card>
                 <Card>

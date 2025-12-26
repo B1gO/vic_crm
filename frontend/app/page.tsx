@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { candidatesApi, Candidate, CandidateStage } from '@/lib/api';
-import { Users, UserCheck, GraduationCap, Briefcase, XCircle, BadgeCheck, PauseCircle, LogOut, Layers } from 'lucide-react';
+import { Users, UserCheck, GraduationCap, Briefcase, XCircle, BadgeCheck, PauseCircle, LogOut, Layers, FileText } from 'lucide-react';
 
 const stageConfig: Record<CandidateStage, { label: string; icon: React.ElementType; color: string }> = {
     SOURCING: { label: 'Sourcing', icon: Users, color: 'text-blue-600 bg-blue-100' },
     TRAINING: { label: 'Training', icon: GraduationCap, color: 'text-amber-600 bg-amber-100' },
+    RESUME: { label: 'Resume', icon: FileText, color: 'text-sky-600 bg-sky-100' },
     MOCKING: { label: 'Mocking', icon: Layers, color: 'text-violet-600 bg-violet-100' },
     MARKETING: { label: 'Marketing', icon: UserCheck, color: 'text-emerald-600 bg-emerald-100' },
     OFFERED: { label: 'Offered', icon: BadgeCheck, color: 'text-lime-600 bg-lime-100' },
@@ -31,7 +32,7 @@ export default function DashboardPage() {
     const countByStage = (stage: CandidateStage) =>
         candidates.filter(c => c.stage === stage).length;
 
-    const stages: CandidateStage[] = ['SOURCING', 'TRAINING', 'MOCKING', 'MARKETING', 'OFFERED', 'PLACED', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'];
+    const stages: CandidateStage[] = ['SOURCING', 'TRAINING', 'RESUME', 'MOCKING', 'MARKETING', 'OFFERED', 'PLACED', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'];
 
     return (
         <div className="space-y-8">

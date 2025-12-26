@@ -30,6 +30,7 @@ public class CandidateService {
     private static final Set<CandidateStage> NON_TERMINAL_STAGES = Set.of(
             CandidateStage.SOURCING,
             CandidateStage.TRAINING,
+            CandidateStage.RESUME,
             CandidateStage.MOCKING,
             CandidateStage.MARKETING,
             CandidateStage.OFFERED);
@@ -37,7 +38,9 @@ public class CandidateService {
     private static final Map<CandidateStage, Set<CandidateStage>> ALLOWED_TRANSITIONS = Map.of(
             CandidateStage.SOURCING, Set.of(CandidateStage.TRAINING, CandidateStage.MARKETING,
                     CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
-            CandidateStage.TRAINING, Set.of(CandidateStage.MOCKING, CandidateStage.ELIMINATED,
+            CandidateStage.TRAINING, Set.of(CandidateStage.RESUME, CandidateStage.ELIMINATED,
+                    CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
+            CandidateStage.RESUME, Set.of(CandidateStage.MOCKING, CandidateStage.ELIMINATED,
                     CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
             CandidateStage.MOCKING, Set.of(CandidateStage.MARKETING, CandidateStage.ELIMINATED,
                     CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
@@ -47,11 +50,11 @@ public class CandidateService {
                     CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN, CandidateStage.ON_HOLD),
             CandidateStage.PLACED, Set.of(CandidateStage.MARKETING, CandidateStage.ELIMINATED, CandidateStage.WITHDRAWN),
             CandidateStage.ELIMINATED, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
-                    CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED),
+                    CandidateStage.RESUME, CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED),
             CandidateStage.WITHDRAWN, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
-                    CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED),
+                    CandidateStage.RESUME, CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED),
             CandidateStage.ON_HOLD, Set.of(CandidateStage.SOURCING, CandidateStage.TRAINING,
-                    CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED));
+                    CandidateStage.RESUME, CandidateStage.MOCKING, CandidateStage.MARKETING, CandidateStage.OFFERED));
 
     private static final Map<CandidateStage, Set<CandidateSubStatus>> SUB_STATUS_BY_STAGE = Map.of(
             CandidateStage.SOURCING, Set.of(
@@ -62,6 +65,8 @@ public class CandidateService {
                     CandidateSubStatus.DIRECT_MARKETING_READY),
             CandidateStage.TRAINING, Set.of(
                     CandidateSubStatus.IN_TRAINING),
+            CandidateStage.RESUME, Set.of(
+                    CandidateSubStatus.RESUME_PREPARING, CandidateSubStatus.RESUME_READY),
             CandidateStage.MOCKING, Set.of(
                     CandidateSubStatus.MOCK_THEORY_READY, CandidateSubStatus.MOCK_THEORY_SCHEDULED,
                     CandidateSubStatus.MOCK_THEORY_PASSED, CandidateSubStatus.MOCK_THEORY_FAILED,
@@ -81,6 +86,7 @@ public class CandidateService {
     private static final Map<CandidateStage, CandidateSubStatus> DEFAULT_SUB_STATUS = Map.of(
             CandidateStage.SOURCING, CandidateSubStatus.SOURCED,
             CandidateStage.TRAINING, CandidateSubStatus.IN_TRAINING,
+            CandidateStage.RESUME, CandidateSubStatus.RESUME_PREPARING,
             CandidateStage.MOCKING, CandidateSubStatus.MOCK_THEORY_READY,
             CandidateStage.MARKETING, CandidateSubStatus.MARKETING_ACTIVE,
             CandidateStage.OFFERED, CandidateSubStatus.OFFER_PENDING,
@@ -146,7 +152,6 @@ public class CandidateService {
         existing.setNotes(updated.getNotes());
         existing.setBatch(updated.getBatch());
         existing.setResumeReady(updated.getResumeReady());
-        existing.setCompletionRate(updated.getCompletionRate());
         Candidate saved = candidateRepository.save(existing);
 
         if (previousBatch == null && updated.getBatch() != null && existing.getStage() == CandidateStage.SOURCING) {
@@ -198,6 +203,7 @@ public class CandidateService {
 
         candidate.setStage(toStage);
         candidate.setSubStatus(nextSubStatus);
+        syncResumeReady(candidate, toStage, nextSubStatus);
         candidate.setStageUpdatedAt(LocalDateTime.now());
         applyTransitionMetadata(candidate, request);
         if (toStage == CandidateStage.ELIMINATED && !isBlank(request.getReason())) {
@@ -233,6 +239,7 @@ public class CandidateService {
         }
 
         candidate.setSubStatus(subStatus);
+        syncResumeReady(candidate, stage, subStatus);
         Candidate saved = candidateRepository.save(candidate);
 
         String title = String.format("Sub-status set to %s", subStatus);
@@ -271,6 +278,15 @@ public class CandidateService {
         if (fromStage == CandidateStage.MOCKING && toStage == CandidateStage.MARKETING) {
             if (candidate.getSubStatus() != CandidateSubStatus.MOCK_REAL_PASSED) {
                 throw new InvalidTransitionException("MOCK_REAL_PASSED is required to enter MARKETING");
+            }
+        }
+        if (toStage == CandidateStage.MOCKING) {
+            if (fromStage == CandidateStage.RESUME) {
+                if (candidate.getSubStatus() != CandidateSubStatus.RESUME_READY) {
+                    throw new InvalidTransitionException("RESUME_READY is required to enter MOCKING");
+                }
+            } else if (candidate.getResumeReady() == null || !candidate.getResumeReady()) {
+                throw new InvalidTransitionException("resumeReady must be true to enter MOCKING");
             }
         }
 
@@ -366,6 +382,17 @@ public class CandidateService {
         }
     }
 
+    private void syncResumeReady(Candidate candidate, CandidateStage stage, CandidateSubStatus subStatus) {
+        if (stage != CandidateStage.RESUME) {
+            return;
+        }
+        if (subStatus == CandidateSubStatus.RESUME_READY) {
+            candidate.setResumeReady(true);
+        } else if (subStatus == CandidateSubStatus.RESUME_PREPARING) {
+            candidate.setResumeReady(false);
+        }
+    }
+
     private void requireBatch(Batch batch) {
         if (batch == null) {
             throw new InvalidTransitionException("batch is required for TRAINING");
@@ -431,6 +458,7 @@ public class CandidateService {
         }
         return switch (toStage) {
             case TRAINING -> "Joined Training";
+            case RESUME -> "Entered Resume Prep";
             case MOCKING -> "Entered Mocking";
             case MARKETING -> "Entered Marketing";
             case OFFERED -> "Offer Received";

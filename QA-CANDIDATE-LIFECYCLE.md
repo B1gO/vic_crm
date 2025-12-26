@@ -8,18 +8,19 @@
 Note: Each seed run creates new records. If you seeded multiple times, you may see duplicates.
 
 Seeded candidates (latest run):
-- Sara: TRAINING / IN_TRAINING (resumeReady=true)
+- Sara: RESUME / RESUME_READY (resumeReady=true)
 - Zack: SOURCING / SCREENING_SCHEDULED
 - Vincent: SOURCING / SOURCED
 - Mingkai: MARKETING / MARKETING_ACTIVE
 - Emma: SOURCING / SOURCED (no batch)
 - Tom: ELIMINATED / CLOSED
-- Nina: TRAINING / IN_TRAINING (resumeReady=false)
+- Nina: RESUME / RESUME_PREPARING (resumeReady=false)
 
 ## Stage Definitions (Quick Ref)
 - SOURCING: 招募/筛选
 - TRAINING: 培训进行中
-- MOCKING: 培训后 Mock 阶段
+- RESUME: 简历准备阶段
+- MOCKING: Mock 阶段
 - MARKETING: 营销期（subStatus 不使用）
 - OFFERED: Offer 阶段
 - PLACED: 已入职
@@ -34,6 +35,9 @@ SOURCING:
 
 TRAINING:
 - IN_TRAINING
+
+RESUME:
+- RESUME_PREPARING, RESUME_READY
 
 MOCKING:
 - MOCK_THEORY_READY, MOCK_THEORY_SCHEDULED, MOCK_THEORY_PASSED, MOCK_THEORY_FAILED
@@ -76,44 +80,50 @@ Expected: all scenarios PASS.
 - POST `/api/batches/{batchId}/start`
 - Expect Emma stage=TRAINING
 
-### B) Mocking Rules
-3) Batch end -> MOCKING
+### B) Resume Rules
+3) Batch end -> RESUME
 - POST `/api/batches/{batchId}/end`
-- Expect TRAINING candidates move to MOCKING with subStatus=MOCK_THEORY_READY
+- Expect TRAINING candidates move to RESUME with subStatus=RESUME_PREPARING
 
-4) MOCKING -> MARKETING should fail unless MOCK_REAL_PASSED
+4) RESUME -> MOCKING requires RESUME_READY
+- POST `/api/candidates/{id}/transition` `{toStage:"MOCKING"}`
+- Expect 400 if subStatus != RESUME_READY
+- Update subStatus to RESUME_READY, then transition -> MOCKING should pass
+
+### C) Mocking Rules
+5) MOCKING -> MARKETING should fail unless MOCK_REAL_PASSED
 - POST `/api/candidates/{id}/transition` `{toStage:"MARKETING"}`
 - Expect 400 if subStatus != MOCK_REAL_PASSED
 
-### C) Offer Rules
-5) MARKETING -> OFFERED requires offerType
+### D) Offer Rules
+6) MARKETING -> OFFERED requires offerType
 - POST `/api/candidates/{id}/transition` `{toStage:"OFFERED"}`
 - Expect 400
 - POST with `{toStage:"OFFERED", offerType:"W2"}` -> 200
 
-### D) Screening Mock (Event Driven)
-6) Create Screening Mock (Mock.stage=Screening)
+### E) Screening Mock (Event Driven)
+7) Create Screening Mock (Mock.stage=Screening)
 - POST `/api/mocks` with candidate in SOURCING
 - Expect candidate subStatus=SCREENING_SCHEDULED + MOCK timeline event
 
-7) Complete Screening Mock
+8) Complete Screening Mock
 - PATCH `/api/mocks/{id}` with `completed=true`, decision=`Strong Hire` -> SCREENING_PASSED
 - decision=`No Hire` -> SCREENING_FAILED
 
-### E) Theory/Real Mock (Event Driven)
-8) Create Theory Mock in MOCKING
+### F) Theory/Real Mock (Event Driven)
+9) Create Theory Mock in MOCKING
 - Candidate stage=MOCKING, subStatus=MOCK_THEORY_READY or MOCK_THEORY_FAILED
 - POST `/api/mocks` with stage=TechMock -> MOCK_THEORY_SCHEDULED
 
-9) Complete Theory Mock
+10) Complete Theory Mock
 - decision Strong Hire/Hire -> MOCK_THEORY_PASSED
 - decision Weak/No -> MOCK_THEORY_FAILED
 
-10) Create Real Mock only after Theory Passed
+11) Create Real Mock only after Theory Passed
 - If subStatus != MOCK_THEORY_PASSED -> 400
 - If passed -> MOCK_REAL_SCHEDULED
 
-11) Complete Real Mock
+12) Complete Real Mock
 - decision Strong Hire/Hire -> MOCK_REAL_PASSED + auto transition to MARKETING
 - decision Weak/No -> MOCK_REAL_FAILED (stay in MOCKING)
 
@@ -128,12 +138,13 @@ Expected: all scenarios PASS.
 ### 2) Batch Start/End
 - Open batch detail page
 - Click “Start Batch” -> candidates move to TRAINING
-- Click “End Batch” -> TRAINING candidates move to MOCKING
+- Click “End Batch” -> TRAINING candidates move to RESUME
 
 ### 3) Mock Flow
 - Mocks tab: create Screening mock for SOURCING candidate -> subStatus changes to SCREENING_SCHEDULED
 - Complete feedback as Strong Hire -> SCREENING_PASSED
-- After batch end, create Theory mock -> MOCK_THEORY_SCHEDULED
+- After batch end, update subStatus to RESUME_READY then move to MOCKING
+- Create Theory mock -> MOCK_THEORY_SCHEDULED
 - Complete Theory mock as Strong Hire -> MOCK_THEORY_PASSED
 - Create Real mock -> MOCK_REAL_SCHEDULED
 - Complete Real mock as Strong Hire -> candidate auto moves to MARKETING

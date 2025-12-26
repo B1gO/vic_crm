@@ -6,6 +6,7 @@
 export type CandidateStage =
     | 'SOURCING'
     | 'TRAINING'
+    | 'RESUME'
     | 'MOCKING'
     | 'MARKETING'
     | 'OFFERED'
@@ -25,6 +26,8 @@ export type CandidateSubStatus =
     | 'BATCH_ASSIGNED'
     | 'DIRECT_MARKETING_READY'
     | 'IN_TRAINING'
+    | 'RESUME_PREPARING'
+    | 'RESUME_READY'
     | 'MOCK_THEORY_READY'
     | 'MOCK_THEORY_SCHEDULED'
     | 'MOCK_THEORY_PASSED'
@@ -168,7 +171,6 @@ export interface Candidate {
     batch: Batch | null;
     recruiter: User | null;
     resumeReady: boolean;
-    completionRate: number;
     notes: string | null;
     createdAt: string;
     updatedAt: string;

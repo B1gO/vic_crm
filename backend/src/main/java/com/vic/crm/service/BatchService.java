@@ -71,7 +71,7 @@ public class BatchService {
                 continue;
             }
             TransitionRequest request = new TransitionRequest();
-            request.setToStage(CandidateStage.MOCKING);
+            request.setToStage(CandidateStage.RESUME);
             request.setReason("Batch ended");
             Candidate updated = candidateService.transition(candidate.getId(), request, null);
             candidateService.addTimelineEvent(candidate.getId(), TimelineEventType.BATCH, "batch_ended",

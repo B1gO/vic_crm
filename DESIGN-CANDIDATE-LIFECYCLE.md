@@ -24,6 +24,7 @@
 ### 主状态 (CandidateStage)
 - `SOURCING` 招募/筛选
 - `TRAINING` 培训进行中
+- `RESUME` 简历准备阶段
 - `MOCKING` 培训后 Mock 阶段（Theory -> Real）
 - `MARKETING` 营销期
 - `OFFERED` Offer 中
@@ -38,7 +39,8 @@
 | --- | --- | --- |
 | SOURCING | 招募/筛选阶段（录入、联系、筛选） | 默认阶段，无硬性前置条件 |
 | TRAINING | 已进入培训批次 | `batch` 非空（允许跳过筛选） |
-| MOCKING | 培训后 Mock 阶段 | Batch End 事件驱动（仅 TRAINING） |
+| RESUME | 简历准备阶段 | Batch End 事件驱动（仅 TRAINING） |
+| MOCKING | 培训后 Mock 阶段 | `subStatus=RESUME_READY` |
 | MARKETING | 营销期 | 直推：`subStatus=DIRECT_MARKETING_READY` + 完整度校验；Mock：`MOCK_REAL_PASSED` |
 | OFFERED | Offer 阶段 | `offerType` 必填（W2/C2C） |
 | PLACED | 成功入职 | `startDate` 必填 |
@@ -49,6 +51,7 @@
 ### 子状态 (CandidateSubStatus)
 - SOURCING: `SOURCED`, `CONTACTED`, `SCREENING_SCHEDULED`, `SCREENING_PASSED`, `SCREENING_FAILED`, `TRAINING_CONTRACT_SENT`, `TRAINING_CONTRACT_SIGNED`, `BATCH_ASSIGNED`, `DIRECT_MARKETING_READY`
 - TRAINING: `IN_TRAINING`
+- RESUME: `RESUME_PREPARING`, `RESUME_READY`
 - MOCKING: `MOCK_THEORY_READY`, `MOCK_THEORY_SCHEDULED`, `MOCK_THEORY_PASSED`, `MOCK_THEORY_FAILED`, `MOCK_REAL_SCHEDULED`, `MOCK_REAL_PASSED`, `MOCK_REAL_FAILED`
 - MARKETING: `MARKETING_ACTIVE`（占位，不作为子阶段）
 - OFFERED: `OFFER_PENDING`, `OFFER_ACCEPTED`, `OFFER_DECLINED`
@@ -63,7 +66,8 @@
 | --- | --- | --- |
 | SOURCING | TRAINING | `batch` 非空 |
 | SOURCING | MARKETING | `subStatus=DIRECT_MARKETING_READY` + 完整度校验 |
-| TRAINING | MOCKING | Batch End 事件驱动 |
+| TRAINING | RESUME | Batch End 事件驱动 |
+| RESUME | MOCKING | `subStatus=RESUME_READY` |
 | MOCKING | MARKETING | `subStatus=MOCK_REAL_PASSED` |
 | MARKETING | OFFERED | `offerType` 必填 |
 | OFFERED | PLACED | `startDate` 必填 |
@@ -73,7 +77,7 @@
 | ON_HOLD | lastActiveStage | 必须存在 `lastActiveStage` |
 | ELIMINATED/WITHDRAWN | 非终态阶段 | 必须 `reactivateReason` |
 
-注: 非终态阶段 = `SOURCING`, `TRAINING`, `MOCKING`, `MARKETING`, `OFFERED`。
+注: 非终态阶段 = `SOURCING`, `TRAINING`, `RESUME`, `MOCKING`, `MARKETING`, `OFFERED`。
 
 ### 反向/异常迁移补充
 - OFFERED -> MARKETING: 允许（Offer declined 后回到营销），必须 `reason`。
@@ -85,7 +89,8 @@
 flowchart LR
   A[SOURCING] --> B[TRAINING]
   A --> D[MARKETING]
-  B --> C[MOCKING]
+  B --> R[RESUME]
+  R --> C[MOCKING]
   C --> D
   D --> E[OFFERED]
   E --> F[PLACED]
@@ -123,7 +128,12 @@ flowchart LR
 ### Batch
 - 分配 batch: `BATCH_ASSIGNED`
 - Batch Start: batch 内候选人 -> `TRAINING`
-- Batch End: 仅 TRAINING 候选人 -> `MOCKING`，subStatus -> `MOCK_THEORY_READY`
+- Batch End: 仅 TRAINING 候选人 -> `RESUME`，subStatus -> `RESUME_PREPARING`
+
+### Resume
+- 进入 RESUME: 默认 `RESUME_PREPARING`
+- 简历完成: `RESUME_READY`
+- 进入 MOCKING 需要 `RESUME_READY`
 
 ### Mocking
 - 创建 Theory Mock -> `MOCK_THEORY_SCHEDULED`
