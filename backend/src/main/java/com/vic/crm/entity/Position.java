@@ -1,5 +1,6 @@
 package com.vic.crm.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,7 +31,14 @@ public class Position {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "client_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Client client;
+
+    // Source vendor (who provided this position info)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_vendor_id")
+    @JsonIgnoreProperties({ "clients", "contacts", "hibernateLazyInitializer", "handler" })
+    private Vendor sourceVendor;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -41,10 +49,22 @@ public class Position {
     private String location;
 
     @Builder.Default
-    private String status = "OPEN"; // OPEN, CLOSED, FILLED
+    private String status = "OPEN"; // OPEN, ON_HOLD, CLOSED, FILLED
 
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    // Extended fields
+    private String teamName; // Team within client
+    private String hiringManager; // HM name
+    private String jobId; // External job ID
+    private String track; // backend, fullstack, frontend, etc.
+    private String employmentType; // CONTRACT, FULLTIME, C2H
+    private String contractLength; // 6 months, 12 months, etc.
+    private Double billRate; // Bill rate
+    private Double payRate; // Pay rate
+    private Integer headcount; // Number of openings
+    private String jdUrl; // Link to full JD
 
     @CreationTimestamp
     private LocalDateTime createdAt;

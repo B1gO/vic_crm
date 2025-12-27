@@ -88,6 +88,18 @@ This creates: 4 users, 2 batches, 5 clients, 3 vendors, 4 candidates.
 - [x] `PUT /api/clients/{id}` - Update client
 - [x] `DELETE /api/clients/{id}` - Delete client
 
+### Positions
+- [x] `GET /api/positions` - List all positions
+- [x] `GET /api/positions?clientId={id}` - Filter by client
+- [x] `GET /api/positions?vendorId={id}` - Filter by source vendor
+- [x] `GET /api/positions/open` - List open positions
+- [x] `GET /api/positions/{id}` - Get position by ID
+- [x] `POST /api/positions` - Create position
+- [x] `PUT /api/positions/{id}` - Update position
+- [x] `DELETE /api/positions/{id}` - Delete position
+
+**Position Fields**: title, clientId (required), sourceVendorId, teamName, hiringManager, track, employmentType, billRate, payRate, headcount, location, status (OPEN/ON_HOLD/CLOSED/FILLED)
+
 ### Submissions
 - [x] `GET /api/submissions` - List all submissions
 - [x] `GET /api/submissions/candidate/{id}` - Get submissions by candidate

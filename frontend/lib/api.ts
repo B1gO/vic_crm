@@ -103,7 +103,14 @@ export const clientsApi = {
 
 // Positions API (V2)
 export const positionsApi = {
-    getAll: (clientId?: number) => fetchApi<Position[]>(`/api/positions${clientId ? `?clientId=${clientId}` : ''}`),
+    getAll: (params?: { clientId?: number; vendorId?: number; status?: string }) => {
+        const qs = new URLSearchParams();
+        if (params?.clientId) qs.set('clientId', params.clientId.toString());
+        if (params?.vendorId) qs.set('vendorId', params.vendorId.toString());
+        if (params?.status) qs.set('status', params.status);
+        return fetchApi<Position[]>(`/api/positions${qs.toString() ? '?' + qs : ''}`);
+    },
+    getByVendor: (vendorId: number) => fetchApi<Position[]>(`/api/positions?vendorId=${vendorId}`),
     getOpen: () => fetchApi<Position[]>('/api/positions/open'),
     getById: (id: number) => fetchApi<Position>(`/api/positions/${id}`),
     create: (data: Partial<Position>) => fetchApi<Position>('/api/positions', { method: 'POST', body: JSON.stringify(data) }),

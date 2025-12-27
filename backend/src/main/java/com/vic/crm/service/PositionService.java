@@ -25,6 +25,10 @@ public class PositionService {
         return positionRepository.findByStatus(status);
     }
 
+    public List<Position> findBySourceVendorId(Long vendorId) {
+        return positionRepository.findBySourceVendorId(vendorId);
+    }
+
     public List<Position> findOpen() {
         return positionRepository.findByStatus("OPEN");
     }
@@ -50,6 +54,18 @@ public class PositionService {
         existing.setLocation(position.getLocation());
         existing.setStatus(position.getStatus());
         existing.setNotes(position.getNotes());
+        // Extended fields
+        existing.setSourceVendor(position.getSourceVendor());
+        existing.setTeamName(position.getTeamName());
+        existing.setHiringManager(position.getHiringManager());
+        existing.setJobId(position.getJobId());
+        existing.setTrack(position.getTrack());
+        existing.setEmploymentType(position.getEmploymentType());
+        existing.setContractLength(position.getContractLength());
+        existing.setBillRate(position.getBillRate());
+        existing.setPayRate(position.getPayRate());
+        existing.setHeadcount(position.getHeadcount());
+        existing.setJdUrl(position.getJdUrl());
         return positionRepository.save(existing);
     }
 
