@@ -241,8 +241,17 @@ export default function VendorDetailPage() {
     });
     const contactStats = Array.from(contactStatsMap.values()).sort((a, b) => b.total - a.total);
 
-    // Note: Per-client stats are not available since Submission doesn't have client property
-    // Client breakdown would require Opportunity data from V2 model
+    // Calculate per-client stats based on vendor's associated clients
+    // Note: Submissions don't track client directly, so we show a list of associated clients
+    const clientStats: ClientStats[] = (vendor?.clients || []).map(client => ({
+        client: client.companyName,
+        total: 0,
+        placed: 0,
+        offered: 0,
+        rejected: 0,
+        inProgress: 0,
+        successRate: 0
+    }));
 
     return (
         <div className="space-y-6">
@@ -731,6 +740,75 @@ export default function VendorDetailPage() {
                                                     <UserCircle className="w-4 h-4 text-purple-500" />
                                                     <span className="font-medium">{stats.contact}</span>
                                                 </button>
+                                            </td>
+                                            <td className="py-3 px-4 text-center font-semibold">{stats.total}</td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-yellow-500/10 text-yellow-600">
+                                                    {stats.inProgress}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-500/10 text-green-600">
+                                                    {stats.offered}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-500/10 text-emerald-600">
+                                                    {stats.placed}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-500/10 text-red-600">
+                                                    {stats.rejected}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                                <span className={`font-semibold ${stats.successRate >= 50 ? 'text-emerald-600' : stats.successRate >= 25 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                                    {stats.successRate}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Breakdown by Client */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Building className="w-5 h-5" />
+                        Breakdown by Client
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {clientStats.length === 0 ? (
+                        <p className="text-center text-muted-foreground py-6">No client data available</p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-border">
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Client</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Total</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">In Progress</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Offered</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Placed</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Rejected</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-muted-foreground">Success Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {clientStats.map(stats => (
+                                        <tr key={stats.client} className="border-b border-border hover:bg-muted/50">
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Building className="w-4 h-4 text-blue-500" />
+                                                    <span className="font-medium">{stats.client}</span>
+                                                </div>
                                             </td>
                                             <td className="py-3 px-4 text-center font-semibold">{stats.total}</td>
                                             <td className="py-3 px-4 text-center">
