@@ -17,9 +17,13 @@ public class PositionController {
 
     @GetMapping
     public List<Position> getAll(@RequestParam(required = false) Long clientId,
+            @RequestParam(required = false) Long vendorId,
             @RequestParam(required = false) String status) {
         if (clientId != null) {
             return positionService.findByClientId(clientId);
+        }
+        if (vendorId != null) {
+            return positionService.findBySourceVendorId(vendorId);
         }
         if (status != null) {
             return positionService.findByStatus(status);

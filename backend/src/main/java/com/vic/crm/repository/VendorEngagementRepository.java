@@ -10,4 +10,6 @@ public interface VendorEngagementRepository extends JpaRepository<VendorEngageme
     Optional<VendorEngagement> findByCandidateIdAndVendorId(Long candidateId, Long vendorId);
 
     List<VendorEngagement> findByCandidateId(Long candidateId);
+
+    List<VendorEngagement> findByVendorIdOrderByCreatedAtDesc(Long vendorId);
 }

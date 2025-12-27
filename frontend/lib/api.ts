@@ -1,10 +1,10 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, Vendor, Client, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, AssessmentType, StepState, StepType } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, Vendor, Client, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, VendorEngagementResponse, AssessmentType, StepState, StepType, OpportunityStatus } from '@/types';
 
 // Re-export types for convenience
-export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, StepType, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, AssessmentType, StepState } from '@/types';
+export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, StepType, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, VendorEngagementResponse, AssessmentType, StepState, OpportunityStatus } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -87,6 +87,7 @@ export const candidatesApi = {
 export const vendorsApi = {
     getAll: () => fetchApi<Vendor[]>('/api/vendors'),
     getById: (id: number) => fetchApi<Vendor>(`/api/vendors/${id}`),
+    getEngagements: (id: number) => fetchApi<VendorEngagementResponse[]>(`/api/vendors/${id}/engagements`),
     create: (data: Partial<Vendor>) => fetchApi<Vendor>('/api/vendors', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<Vendor>) => fetchApi<Vendor>(`/api/vendors/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => fetch(`${API_BASE_URL}/api/vendors/${id}`, { method: 'DELETE' }),
@@ -103,7 +104,14 @@ export const clientsApi = {
 
 // Positions API
 export const positionsApi = {
-    getAll: (clientId?: number) => fetchApi<Position[]>(`/api/positions${clientId ? `?clientId=${clientId}` : ''}`),
+    getAll: (params?: { clientId?: number; vendorId?: number; status?: string }) => {
+        const qs = new URLSearchParams();
+        if (params?.clientId) qs.set('clientId', params.clientId.toString());
+        if (params?.vendorId) qs.set('vendorId', params.vendorId.toString());
+        if (params?.status) qs.set('status', params.status);
+        return fetchApi<Position[]>(`/api/positions${qs.toString() ? '?' + qs : ''}`);
+    },
+    getByVendor: (vendorId: number) => fetchApi<Position[]>(`/api/positions?vendorId=${vendorId}`),
     getOpen: () => fetchApi<Position[]>('/api/positions/open'),
     getById: (id: number) => fetchApi<Position>(`/api/positions/${id}`),
     create: (data: Partial<Position>) => fetchApi<Position>('/api/positions', { method: 'POST', body: JSON.stringify(data) }),

@@ -10,7 +10,7 @@ BASE_URL="${1:-http://localhost:8080}"
 post_json() {
   local path="$1"
   local payload="$2"
-  curl -s -X POST "$BASE_URL$path" \
+  curl -sS -f -X POST "$BASE_URL$path" \
     -H "Content-Type: application/json" \
     -d "$payload"
 }
@@ -21,6 +21,80 @@ post_json_silent() {
   curl -s -X POST "$BASE_URL$path" \
     -H "Content-Type: application/json" \
     -d "$payload" > /dev/null
+}
+
+post_json_id() {
+  local path="$1"
+  local payload="$2"
+  local response
+  response="$(post_json "$path" "$payload")"
+  RESPONSE="$response" python3 - <<'PY'
+import json
+import os
+import sys
+
+data = os.environ.get("RESPONSE", "").strip()
+if not data:
+    print("Empty response while creating resource.", file=sys.stderr)
+    sys.exit(1)
+try:
+    payload = json.loads(data)
+except Exception:
+    print("Invalid JSON response:", data, file=sys.stderr)
+    raise SystemExit(1)
+if "id" not in payload:
+    print("Response missing id:", payload, file=sys.stderr)
+    sys.exit(1)
+print(payload["id"])
+PY
+}
+
+get_engagement_id() {
+  local vendor_id="$1"
+  local candidate_id="$2"
+  local response
+  response="$(curl -sS "$BASE_URL/api/vendors/${vendor_id}/engagements")"
+  VENDOR_ENGAGEMENT_RESPONSE="$response" CANDIDATE_ID="$candidate_id" python3 - <<'PY'
+import json
+import os
+import sys
+
+data = os.environ.get("VENDOR_ENGAGEMENT_RESPONSE", "").strip()
+if not data:
+    sys.exit(0)
+try:
+    payload = json.loads(data)
+except Exception:
+    print("Invalid JSON response for vendor engagements:", data, file=sys.stderr)
+    sys.exit(1)
+candidate_id = int(os.environ.get("CANDIDATE_ID", "0"))
+for item in payload:
+    candidate = item.get("candidate") or {}
+    if candidate.get("id") == candidate_id:
+        print(item.get("id"))
+        sys.exit(0)
+sys.exit(0)
+PY
+}
+
+get_or_create_engagement() {
+  local vendor_id="$1"
+  local candidate_id="$2"
+  local existing_id
+  existing_id="$(get_engagement_id "$vendor_id" "$candidate_id")"
+  if [ -n "$existing_id" ]; then
+    echo "$existing_id"
+    return
+  fi
+  local payload
+  payload=$(cat <<EOF
+{
+  "candidateId":${candidate_id},
+  "vendorId":${vendor_id}
+}
+EOF
+)
+  post_json_id "/api/vendor-engagements" "$payload"
 }
 
 echo "🌱 Seeding VicCRM database with realistic stage pipeline data..."
@@ -353,27 +427,249 @@ post_json_silent "/api/mocks" '{
   "summary":"Ready for client-facing interviews."
 }'
 
-# ====== POSITIONS ======
+# ====== POSITIONS (with sourceVendor and extended fields) ======
 echo "  Creating positions..."
-post_json_silent "/api/positions" '{
+
+# Positions from Infobahn (Vendor ID 1) - works with clients 1,2,4,5
+pos_infobahn_java_id=$(post_json_id "/api/positions" '{
   "title":"Java Backend Developer",
   "client":{"id":2},
-  "location":"Seattle, WA",
+  "sourceVendor":{"id":1},
+  "teamName":"eCommerce",
+  "track":"backend",
+  "employmentType":"CONTRACT",
+  "location":"Bentonville, AR",
+  "billRate":80,
+  "payRate":60,
+  "headcount":3,
   "status":"OPEN"
-}'
+}')
 
-post_json_silent "/api/positions" '{
-  "title":"Senior Frontend Engineer",
-  "client":{"id":1},
-  "location":"San Jose, CA",
-  "status":"OPEN"
-}'
-
-post_json_silent "/api/positions" '{
+pos_infobahn_fullstack_id=$(post_json_id "/api/positions" '{
   "title":"Software Engineer II",
   "client":{"id":4},
-  "location":"Remote",
+  "sourceVendor":{"id":1},
+  "teamName":"Payments",
+  "track":"fullstack",
+  "employmentType":"C2H",
+  "location":"San Jose, CA",
+  "billRate":90,
+  "payRate":70,
+  "headcount":1,
   "status":"OPEN"
+}')
+
+post_json_silent "/api/positions" '{
+  "title":"QA Engineer",
+  "client":{"id":5},
+  "sourceVendor":{"id":1},
+  "teamName":"TurboTax",
+  "track":"qa",
+  "employmentType":"CONTRACT",
+  "location":"Mountain View, CA",
+  "billRate":70,
+  "payRate":55,
+  "headcount":2,
+  "status":"ON_HOLD"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"Frontend Engineer",
+  "client":{"id":1},
+  "sourceVendor":{"id":1},
+  "teamName":"Marketplace",
+  "track":"frontend",
+  "employmentType":"CONTRACT",
+  "location":"San Jose, CA",
+  "billRate":95,
+  "payRate":75,
+  "headcount":1,
+  "status":"OPEN"
+}'
+
+# Positions from Bayone (Vendor ID 2) - works with clients 1,2,4
+pos_bayone_frontend_id=$(post_json_id "/api/positions" '{
+  "title":"Senior Frontend Engineer",
+  "client":{"id":1},
+  "sourceVendor":{"id":2},
+  "teamName":"Search Experience",
+  "track":"frontend",
+  "employmentType":"CONTRACT",
+  "location":"San Jose, CA",
+  "billRate":95,
+  "payRate":75,
+  "headcount":1,
+  "status":"OPEN"
+}')
+
+pos_bayone_fullstack_id=$(post_json_id "/api/positions" '{
+  "title":"Supply Chain Engineer",
+  "client":{"id":2},
+  "sourceVendor":{"id":2},
+  "teamName":"Supply Chain",
+  "track":"fullstack",
+  "employmentType":"CONTRACT",
+  "location":"Dallas, TX",
+  "billRate":78,
+  "payRate":58,
+  "headcount":1,
+  "status":"CLOSED"
+}')
+
+post_json_silent "/api/positions" '{
+  "title":"Backend Engineer",
+  "client":{"id":1},
+  "sourceVendor":{"id":2},
+  "teamName":"Buyer Platform",
+  "track":"backend",
+  "employmentType":"FULLTIME",
+  "location":"Remote",
+  "billRate":0,
+  "payRate":0,
+  "headcount":2,
+  "status":"OPEN"
+}'
+
+# Positions from Inspyr (Vendor ID 3) - works with client 3
+post_json_silent "/api/positions" '{
+  "title":"iOS Developer",
+  "client":{"id":3},
+  "sourceVendor":{"id":3},
+  "teamName":"Apple Music",
+  "track":"frontend",
+  "employmentType":"CONTRACT",
+  "location":"Cupertino, CA",
+  "billRate":120,
+  "payRate":95,
+  "headcount":2,
+  "status":"OPEN"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"Backend Engineer - iCloud",
+  "client":{"id":3},
+  "sourceVendor":{"id":3},
+  "teamName":"iCloud Services",
+  "track":"backend",
+  "employmentType":"CONTRACT",
+  "location":"Cupertino, CA",
+  "billRate":115,
+  "payRate":90,
+  "headcount":3,
+  "status":"OPEN"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"DevOps Engineer",
+  "client":{"id":3},
+  "sourceVendor":{"id":3},
+  "teamName":"Infrastructure",
+  "track":"devops",
+  "employmentType":"C2H",
+  "location":"Austin, TX",
+  "billRate":100,
+  "payRate":80,
+  "headcount":1,
+  "status":"ON_HOLD"
+}'
+
+# ====== VENDOR ENGAGEMENTS & OPPORTUNITIES ======
+echo "  Creating vendor engagements..."
+
+# Mingkai (ID 4) @ Infobahn (ID 1) - interviewing
+eng_infobahn_mingkai_id=$(get_or_create_engagement 1 4)
+
+attempt_infobahn_mingkai_id=$(post_json_id "/api/vendor-engagements/${eng_infobahn_mingkai_id}/attempts" '{
+  "attemptType":"OA",
+  "track":"backend",
+  "state":"COMPLETED",
+  "result":"PASS",
+  "happenedAt":"2026-02-05T10:00:00"
+}')
+
+opp_infobahn_mingkai_payload=$(cat <<EOF
+{
+  "positionId":${pos_infobahn_java_id},
+  "submittedAt":"2026-02-10T10:00:00",
+  "attachAttemptIds":[${attempt_infobahn_mingkai_id}]
+}
+EOF
+)
+
+opp_infobahn_mingkai_id=$(post_json_id "/api/vendor-engagements/${eng_infobahn_mingkai_id}/opportunities" "$opp_infobahn_mingkai_payload")
+
+post_json_silent "/api/opportunities/$opp_infobahn_mingkai_id/steps" '{
+  "type":"CLIENT_INTERVIEW",
+  "state":"IN_PROGRESS",
+  "result":"PENDING",
+  "round":1,
+  "scheduledAt":"2026-02-15T10:00:00"
+}'
+
+# Kevin (ID 10) @ Infobahn (ID 1) - offered
+eng_infobahn_kevin_id=$(get_or_create_engagement 1 10)
+
+attempt_infobahn_kevin_id=$(post_json_id "/api/vendor-engagements/${eng_infobahn_kevin_id}/attempts" '{
+  "attemptType":"VENDOR_SCREENING",
+  "track":"fullstack",
+  "state":"COMPLETED",
+  "result":"PASS",
+  "happenedAt":"2026-02-12T09:00:00"
+}')
+
+opp_infobahn_kevin_payload=$(cat <<EOF
+{
+  "positionId":${pos_infobahn_fullstack_id},
+  "submittedAt":"2026-02-12T12:00:00",
+  "attachAttemptIds":[${attempt_infobahn_kevin_id}]
+}
+EOF
+)
+
+opp_infobahn_kevin_id=$(post_json_id "/api/vendor-engagements/${eng_infobahn_kevin_id}/opportunities" "$opp_infobahn_kevin_payload")
+
+post_json_silent "/api/opportunities/$opp_infobahn_kevin_id/steps" '{
+  "type":"OFFER",
+  "state":"COMPLETED",
+  "result":"PASS",
+  "happenedAt":"2026-03-01T09:00:00"
+}'
+
+# Sara (ID 1) @ Bayone (ID 2) - placed
+eng_bayone_sara_id=$(get_or_create_engagement 2 1)
+
+attempt_bayone_sara_id=$(post_json_id "/api/vendor-engagements/${eng_bayone_sara_id}/attempts" '{
+  "attemptType":"OA",
+  "track":"frontend",
+  "state":"COMPLETED",
+  "result":"PASS",
+  "happenedAt":"2026-02-18T09:00:00"
+}')
+
+opp_bayone_sara_payload=$(cat <<EOF
+{
+  "positionId":${pos_bayone_frontend_id},
+  "submittedAt":"2026-02-20T10:00:00",
+  "attachAttemptIds":[${attempt_bayone_sara_id}]
+}
+EOF
+)
+
+opp_bayone_sara_id=$(post_json_id "/api/vendor-engagements/${eng_bayone_sara_id}/opportunities" "$opp_bayone_sara_payload")
+
+post_json_silent "/api/opportunities/$opp_bayone_sara_id/steps" '{
+  "type":"PLACED",
+  "state":"COMPLETED",
+  "result":"PASS",
+  "happenedAt":"2026-03-15T09:00:00"
+}'
+
+# Mingkai (ID 4) @ Bayone (ID 2) - active
+eng_bayone_mingkai_id=$(get_or_create_engagement 2 4)
+
+post_json_silent "/api/vendor-engagements/$eng_bayone_mingkai_id/opportunities" '{
+  "positionId":'"${pos_bayone_fullstack_id}"',
+  "submittedAt":"2026-02-25T10:00:00"
 }'
 
 # ====== TIMELINE EVENTS ======
@@ -504,5 +800,9 @@ echo "   - 2 batches"
 echo "   - 5 clients"
 echo "   - 3 vendors"
 echo "   - 10 candidates at various stages"
+echo "   - 10 positions (4 Infobahn, 3 Bayone, 3 Inspyr)"
 echo "   - 4 mocks (screening and theory/real for eligible candidates)"
+echo "   - 4 vendor engagements"
+echo "   - 4 opportunities"
+echo "   - 3 opportunity steps"
 echo "   - Timeline events for journey tracking"

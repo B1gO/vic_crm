@@ -188,11 +188,22 @@ export interface Position {
     id: number;
     title: string;
     client: Client;
+    sourceVendor?: { id: number; companyName: string } | null;
     description: string | null;
     requirements: string | null;
     location: string | null;
-    status: string; // OPEN, CLOSED, FILLED
+    status: 'OPEN' | 'ON_HOLD' | 'CLOSED' | 'FILLED';
     notes: string | null;
+    teamName: string | null;
+    hiringManager: string | null;
+    jobId: string | null;
+    track: string | null;
+    employmentType: string | null;
+    contractLength: string | null;
+    billRate: number | null;
+    payRate: number | null;
+    headcount: number | null;
+    jdUrl: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -389,6 +400,21 @@ export interface CandidateEngagementResponse {
     id: number;
     status: EngagementStatus;
     vendor: VendorSummary;
+    attempts: AssessmentAttemptSummary[];
+    opportunities: OpportunitySummary[];
+}
+
+export interface CandidateSummary {
+    id: number;
+    name: string;
+    email: string | null;
+    phone: string | null;
+}
+
+export interface VendorEngagementResponse {
+    id: number;
+    status: EngagementStatus;
+    candidate: CandidateSummary;
     attempts: AssessmentAttemptSummary[];
     opportunities: OpportunitySummary[];
 }
