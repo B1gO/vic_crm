@@ -70,14 +70,11 @@ export function VendorEngagementCard({
     // Add Opportunity Form State
     const [selectedPositionId, setSelectedPositionId] = useState<number | null>(null);
     const [selectedAttemptIds, setSelectedAttemptIds] = useState<number[]>([]);
-    const [vendorPositions, setVendorPositions] = useState<Position[]>([]);
 
     const loadPositions = async () => {
         try {
-            // Only load positions from this vendor
-            const vendorPos = await positionsApi.getByVendor(engagement.vendor.id);
-            setVendorPositions(vendorPos);
-            setPositions(vendorPos);
+            const data = await positionsApi.getOpen();
+            setPositions(data);
         } catch (error) {
             console.error('Failed to load positions:', error);
         }
@@ -301,15 +298,11 @@ export function VendorEngagementCard({
                                         className="w-full px-3 py-2 border rounded-md text-sm"
                                     >
                                         <option value="">Select position...</option>
-                                        {vendorPositions.length > 0 ? (
-                                            vendorPositions.map((pos) => (
-                                                <option key={pos.id} value={pos.id}>
-                                                    {pos.client?.companyName} - {pos.title} {pos.track ? `(${pos.track})` : ''}
-                                                </option>
-                                            ))
-                                        ) : (
-                                            <option value="" disabled>No positions from this vendor</option>
-                                        )}
+                                        {positions.map((pos) => (
+                                            <option key={pos.id} value={pos.id}>
+                                                {pos.client?.companyName} - {pos.title}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
 

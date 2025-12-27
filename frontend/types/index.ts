@@ -191,23 +191,11 @@ export interface Position {
     id: number;
     title: string;
     client: Client;
-    sourceVendor?: { id: number; companyName: string } | null;
     description: string | null;
     requirements: string | null;
     location: string | null;
-    status: 'OPEN' | 'ON_HOLD' | 'CLOSED' | 'FILLED';
+    status: string; // OPEN, CLOSED, FILLED
     notes: string | null;
-    // Extended fields
-    teamName: string | null;
-    hiringManager: string | null;
-    jobId: string | null;
-    track: string | null;
-    employmentType: string | null;  // CONTRACT, FULLTIME, C2H
-    contractLength: string | null;
-    billRate: number | null;
-    payRate: number | null;
-    headcount: number | null;
-    jdUrl: string | null;
     createdAt: string;
     updatedAt: string;
 }

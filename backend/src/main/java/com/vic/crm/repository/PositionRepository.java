@@ -13,6 +13,4 @@ public interface PositionRepository extends JpaRepository<Position, Long> {
     List<Position> findByStatus(String status);
 
     List<Position> findByClientIdAndStatus(Long clientId, String status);
-
-    List<Position> findBySourceVendorId(Long sourceVendorId);
 }
