@@ -1,9 +1,12 @@
 package com.vic.crm.controller;
 
 import com.vic.crm.entity.Submission;
-import com.vic.crm.entity.SubmissionEvent;
+import com.vic.crm.entity.SubmissionStep;
+import com.vic.crm.enums.StepResult;
+import com.vic.crm.enums.StepType;
 import com.vic.crm.enums.SubmissionStatus;
 import com.vic.crm.service.SubmissionService;
+import com.vic.crm.service.SubmissionStepService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +21,7 @@ import java.util.Map;
 public class SubmissionController {
 
     private final SubmissionService submissionService;
+    private final SubmissionStepService stepService;
 
     @GetMapping
     public List<Submission> getAll() {
@@ -50,106 +54,80 @@ public class SubmissionController {
         return submissionService.update(id, submission);
     }
 
-    // ===== Status Update Endpoints =====
-
     /**
-     * Update submission status directly.
+     * Manually update submission status.
      */
-    @PostMapping("/{id}/status")
-    public Submission updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
-        SubmissionStatus status = SubmissionStatus.valueOf((String) payload.get("status"));
-        String notes = (String) payload.get("notes");
-        String result = (String) payload.get("result");
-        Integer round = payload.get("round") != null ? ((Number) payload.get("round")).intValue() : null;
-        Long actorId = payload.get("actorId") != null ? ((Number) payload.get("actorId")).longValue() : null;
-        return submissionService.updateStatus(id, status, notes, result, round, actorId);
-    }
-
-    /**
-     * Get submission timeline events.
-     */
-    @GetMapping("/{id}/events")
-    public List<SubmissionEvent> getEvents(@PathVariable Long id) {
-        return submissionService.getEvents(id);
-    }
-
-    // ===== OA Endpoints =====
-
-    @PostMapping("/{id}/oa/schedule")
-    public Submission scheduleOa(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
-        LocalDateTime scheduledAt = LocalDateTime.parse((String) payload.get("scheduledAt"));
-        Long actorId = payload.get("actorId") != null ? ((Number) payload.get("actorId")).longValue() : null;
-        return submissionService.scheduleOa(id, scheduledAt, actorId);
-    }
-
-    @PostMapping("/{id}/oa/result")
-    public Submission recordOaResult(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
-        boolean passed = (Boolean) payload.get("passed");
-        String score = (String) payload.get("score");
-        String feedback = (String) payload.get("feedback");
-        Long actorId = payload.get("actorId") != null ? ((Number) payload.get("actorId")).longValue() : null;
-        return submissionService.recordOaResult(id, passed, score, feedback, actorId);
-    }
-
-    // ===== Vendor Screening Endpoints =====
-
-    @PostMapping("/{id}/vendor-screening/schedule")
-    public Submission scheduleVendorScreening(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
-        LocalDateTime scheduledAt = LocalDateTime.parse((String) payload.get("scheduledAt"));
-        Long actorId = payload.get("actorId") != null ? ((Number) payload.get("actorId")).longValue() : null;
-        return submissionService.scheduleVendorScreening(id, scheduledAt, actorId);
-    }
-
-    @PostMapping("/{id}/vendor-screening/result")
-    public Submission recordVendorScreeningResult(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
-        boolean passed = (Boolean) payload.get("passed");
-        String feedback = (String) payload.get("feedback");
-        Long actorId = payload.get("actorId") != null ? ((Number) payload.get("actorId")).longValue() : null;
-        return submissionService.recordVendorScreeningResult(id, passed, feedback, actorId);
-    }
-
-    // ===== Interview Endpoints =====
-
-    @PostMapping("/{id}/interview/schedule")
-    public Submission scheduleInterview(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
-        int round = ((Number) payload.get("round")).intValue();
-        LocalDateTime scheduledAt = LocalDateTime.parse((String) payload.get("scheduledAt"));
-        Long actorId = payload.get("actorId") != null ? ((Number) payload.get("actorId")).longValue() : null;
-        return submissionService.scheduleInterview(id, round, scheduledAt, actorId);
-    }
-
-    @PostMapping("/{id}/interview/result")
-    public Submission recordInterviewResult(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
-        int round = ((Number) payload.get("round")).intValue();
-        boolean passed = (Boolean) payload.get("passed");
-        String feedback = (String) payload.get("feedback");
-        Long actorId = payload.get("actorId") != null ? ((Number) payload.get("actorId")).longValue() : null;
-        return submissionService.recordInterviewResult(id, round, passed, feedback, actorId);
-    }
-
-    // ===== Offer Endpoints =====
-
-    @PostMapping("/{id}/offer")
-    public Submission recordOffer(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
-        String offerDetails = (String) payload.get("offerDetails");
-        LocalDateTime offerDate = payload.get("offerDate") != null
-                ? LocalDateTime.parse((String) payload.get("offerDate"))
-                : null;
-        Long actorId = payload.get("actorId") != null ? ((Number) payload.get("actorId")).longValue() : null;
-        return submissionService.recordOffer(id, offerDetails, offerDate, actorId);
-    }
-
-    @PostMapping("/{id}/offer/respond")
-    public Submission respondToOffer(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
-        boolean accepted = (Boolean) payload.get("accepted");
-        String notes = (String) payload.get("notes");
-        Long actorId = payload.get("actorId") != null ? ((Number) payload.get("actorId")).longValue() : null;
-        return submissionService.respondToOffer(id, accepted, notes, actorId);
+    @PutMapping("/{id}/status")
+    public Submission updateStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        SubmissionStatus status = SubmissionStatus.valueOf(payload.get("status"));
+        return submissionService.updateStatus(id, status);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         submissionService.delete(id);
+    }
+
+    // ===== Step Endpoints =====
+
+    /**
+     * Get all steps for a submission.
+     */
+    @GetMapping("/{id}/steps")
+    public List<SubmissionStep> getSteps(@PathVariable Long id) {
+        return stepService.findBySubmissionId(id);
+    }
+
+    /**
+     * Add a step to a submission.
+     */
+    @PostMapping("/{id}/steps")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SubmissionStep addStep(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        Long parentStepId = payload.get("parentStepId") != null
+                ? ((Number) payload.get("parentStepId")).longValue()
+                : null;
+        StepType type = StepType.valueOf((String) payload.get("type"));
+        Long positionId = payload.get("positionId") != null
+                ? ((Number) payload.get("positionId")).longValue()
+                : null;
+        Integer round = payload.get("round") != null
+                ? ((Number) payload.get("round")).intValue()
+                : null;
+        LocalDateTime scheduledAt = payload.get("scheduledAt") != null
+                ? LocalDateTime.parse((String) payload.get("scheduledAt"))
+                : null;
+
+        return stepService.addStep(id, parentStepId, type, positionId, round, scheduledAt);
+    }
+
+    /**
+     * Update step result (Pass/Fail).
+     */
+    @PutMapping("/steps/{stepId}/result")
+    public SubmissionStep updateStepResult(@PathVariable Long stepId, @RequestBody Map<String, Object> payload) {
+        StepResult result = StepResult.valueOf((String) payload.get("result"));
+        String feedback = (String) payload.get("feedback");
+        String score = (String) payload.get("score");
+        return stepService.updateResult(stepId, result, feedback, score);
+    }
+
+    /**
+     * Update step schedule.
+     */
+    @PutMapping("/steps/{stepId}/schedule")
+    public SubmissionStep updateStepSchedule(@PathVariable Long stepId, @RequestBody Map<String, Object> payload) {
+        LocalDateTime scheduledAt = LocalDateTime.parse((String) payload.get("scheduledAt"));
+        return stepService.updateSchedule(stepId, scheduledAt);
+    }
+
+    /**
+     * Delete a step.
+     */
+    @DeleteMapping("/steps/{stepId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteStep(@PathVariable Long stepId) {
+        stepService.delete(stepId);
     }
 }

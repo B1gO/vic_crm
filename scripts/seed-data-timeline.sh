@@ -353,17 +353,13 @@ post_json_silent "/api/mocks" '{
   "summary":"Ready for client-facing interviews."
 }'
 
-# ====== SUBMISSIONS ======
+# ====== SUBMISSIONS (V2 - simplified) ======
 echo "  Creating submissions..."
 # Kevin (ID 10) - he has an offer
 post_json_silent "/api/submissions" '{
   "candidate":{"id":10},
   "vendor":{"id":1},
-  "client":{"id":1},
-  "positionTitle":"Senior Frontend Engineer",
   "status":"OFFERED",
-  "screeningType":"INTERVIEW",
-  "currentRound":3,
   "notes":"Final round completed. Offer extended."
 }'
 
@@ -371,23 +367,38 @@ post_json_silent "/api/submissions" '{
 post_json_silent "/api/submissions" '{
   "candidate":{"id":4},
   "vendor":{"id":1},
-  "client":{"id":2},
-  "positionTitle":"Java Backend Developer",
-  "status":"CLIENT_ROUND",
-  "screeningType":"OA",
-  "currentRound":2,
-  "notes":"Passed vendor OA. Waiting for client round 2."
+  "status":"ACTIVE",
+  "notes":"Submitted to Infobahn. Waiting for next steps."
 }'
 
 post_json_silent "/api/submissions" '{
   "candidate":{"id":4},
   "vendor":{"id":2},
+  "status":"ACTIVE",
+  "notes":"Just submitted to Bayone."
+}'
+
+# ====== POSITIONS (V2 - for steps) ======
+echo "  Creating positions..."
+post_json_silent "/api/positions" '{
+  "title":"Java Backend Developer",
+  "client":{"id":2},
+  "location":"Seattle, WA",
+  "status":"OPEN"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"Senior Frontend Engineer",
+  "client":{"id":1},
+  "location":"San Jose, CA",
+  "status":"OPEN"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"Software Engineer II",
   "client":{"id":4},
-  "positionTitle":"Software Engineer II",
-  "status":"VENDOR_SCREENING",
-  "screeningType":"INTERVIEW",
-  "currentRound":1,
-  "notes":"Just submitted."
+  "location":"Remote",
+  "status":"OPEN"
 }'
 
 # ====== TIMELINE EVENTS ======

@@ -9,6 +9,4 @@ public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     List<Submission> findByCandidateId(Long candidateId);
 
     List<Submission> findByVendorId(Long vendorId);
-
-    List<Submission> findByClientId(Long clientId);
 }

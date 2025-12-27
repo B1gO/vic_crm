@@ -242,6 +242,36 @@ flowchart TD
 - **Round Tracking**: Track interview round progression
 - **Contact Attribution**: Track which vendor contact handled each submission
 
+### Vendor Engagements (v2.0)
+
+The new Vendor Engagement system provides a more intuitive way to manage candidate submissions and interview pipelines.
+
+#### Inline Expandable Opportunity Rows
+- **Inline Display**: Opportunity details expand directly in the page (no modal dialogs)
+- **Pipeline Steps Tree**: Visual tree representation of interview stages
+- **Attach/Detach Assessments**: Link OA/Screening results to opportunities
+
+#### Smart Default Expansion
+Opportunities automatically expand or collapse based on their status:
+
+| Status | Default | Reason |
+|--------|---------|--------|
+| `INTERVIEWING` | ✅ Expanded | Actively in process |
+| `OFFERED` | ✅ Expanded | Pending decision |
+| `ACTIVE` | ❌ Collapsed | Just submitted |
+| `PLACED` | ❌ Collapsed | Terminal state |
+
+#### Terminal States (Auto-Collapse)
+After loading, opportunities with terminal states auto-collapse:
+- `CLIENT_INTERVIEW` with `FAIL` result
+- `REJECTED` step type
+- `WITHDRAWN` step type  
+- `PLACED` step type
+
+#### Assessment Updates
+- Update assessment attempt status (PENDING → PASS/FAIL)
+- Only CLIENT_INTERVIEW steps show Pass/Fail buttons
+
 ### Interview Experience (面经)
 - **Tech Categories**: Filter by Java, React, Python, AWS, etc.
 - **Recording Links**: Store interview recording URLs

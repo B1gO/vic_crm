@@ -1,10 +1,10 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, Vendor, Client, Submission, SubmissionEvent, SubmissionStatus, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, Vendor, Client, Submission, SubmissionStatus, SubmissionStep, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, AssessmentType, StepState, StepType } from '@/types';
 
 // Re-export types for convenience
-export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, Submission, SubmissionEvent, InterviewExperience, SubmissionStatus, ScreeningType, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType } from '@/types';
+export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, Submission, SubmissionStatus, SubmissionStep, StepType, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, AssessmentType, StepState } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -80,6 +80,7 @@ export const candidatesApi = {
         }),
     getTimeline: (id: number) => fetchApi<TimelineEvent[]>(`/api/candidates/${id}/timeline`),
     getTransitions: (id: number) => fetchApi<TimelineEvent[]>(`/api/candidates/${id}/timeline`),
+    getEngagements: (id: number) => fetchApi<CandidateEngagementResponse[]>(`/api/candidates/${id}/engagements`),
 };
 
 // Vendors API
@@ -100,7 +101,17 @@ export const clientsApi = {
     delete: (id: number) => fetch(`${API_BASE_URL}/api/clients/${id}`, { method: 'DELETE' }),
 };
 
-// Submissions API
+// Positions API (V2)
+export const positionsApi = {
+    getAll: (clientId?: number) => fetchApi<Position[]>(`/api/positions${clientId ? `?clientId=${clientId}` : ''}`),
+    getOpen: () => fetchApi<Position[]>('/api/positions/open'),
+    getById: (id: number) => fetchApi<Position>(`/api/positions/${id}`),
+    create: (data: Partial<Position>) => fetchApi<Position>('/api/positions', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: number, data: Partial<Position>) => fetchApi<Position>(`/api/positions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) => fetch(`${API_BASE_URL}/api/positions/${id}`, { method: 'DELETE' }),
+};
+
+// Submissions API (V2 - simplified with step-based model)
 export const submissionsApi = {
     getAll: () => fetchApi<Submission[]>('/api/submissions'),
     getByCandidate: (candidateId: number) => fetchApi<Submission[]>(`/api/submissions/candidate/${candidateId}`),
@@ -110,36 +121,31 @@ export const submissionsApi = {
     update: (id: number, data: Partial<Submission>) => fetchApi<Submission>(`/api/submissions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' }),
 
-    // Status update
-    updateStatus: (id: number, payload: { status: SubmissionStatus; notes?: string; result?: string; round?: number; actorId?: number }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/status`, { method: 'POST', body: JSON.stringify(payload) }),
+    // Manual status update
+    updateStatus: (id: number, payload: { status: SubmissionStatus }) =>
+        fetchApi<Submission>(`/api/submissions/${id}/status`, { method: 'PUT', body: JSON.stringify(payload) }),
 
-    // Event timeline
-    getEvents: (id: number) => fetchApi<SubmissionEvent[]>(`/api/submissions/${id}/events`),
+    // Steps (tree-based, V2)
+    getSteps: (id: number) => fetchApi<SubmissionStep[]>(`/api/submissions/${id}/steps`),
+    addStep: (id: number, payload: {
+        parentStepId?: number | null;
+        type: string;
+        positionId?: number;
+        round?: number;
+        scheduledAt?: string
+    }) =>
+        fetchApi<SubmissionStep>(`/api/submissions/${id}/steps`, { method: 'POST', body: JSON.stringify(payload) }),
 
-    // OA endpoints
-    scheduleOa: (id: number, payload: { scheduledAt: string; actorId?: number }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/oa/schedule`, { method: 'POST', body: JSON.stringify(payload) }),
-    recordOaResult: (id: number, payload: { passed: boolean; score?: string; feedback?: string; actorId?: number }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/oa/result`, { method: 'POST', body: JSON.stringify(payload) }),
+    // Step result update
+    updateStepResult: (stepId: number, payload: { result: StepResult; feedback?: string; score?: string }) =>
+        fetchApi<SubmissionStep>(`/api/submissions/steps/${stepId}/result`, { method: 'PUT', body: JSON.stringify(payload) }),
 
-    // Vendor screening endpoints
-    scheduleVendorScreening: (id: number, payload: { scheduledAt: string; actorId?: number }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/vendor-screening/schedule`, { method: 'POST', body: JSON.stringify(payload) }),
-    recordVendorScreeningResult: (id: number, payload: { passed: boolean; feedback?: string; actorId?: number }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/vendor-screening/result`, { method: 'POST', body: JSON.stringify(payload) }),
+    // Step schedule update
+    updateStepSchedule: (stepId: number, payload: { scheduledAt: string }) =>
+        fetchApi<SubmissionStep>(`/api/submissions/steps/${stepId}/schedule`, { method: 'PUT', body: JSON.stringify(payload) }),
 
-    // Interview endpoints
-    scheduleInterview: (id: number, payload: { round: number; scheduledAt: string; actorId?: number }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/interview/schedule`, { method: 'POST', body: JSON.stringify(payload) }),
-    recordInterviewResult: (id: number, payload: { round: number; passed: boolean; feedback?: string; actorId?: number }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/interview/result`, { method: 'POST', body: JSON.stringify(payload) }),
-
-    // Offer endpoints
-    recordOffer: (id: number, payload: { offerDetails?: string; offerDate?: string; actorId?: number }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/offer`, { method: 'POST', body: JSON.stringify(payload) }),
-    respondToOffer: (id: number, payload: { accepted: boolean; notes?: string; actorId?: number }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/offer/respond`, { method: 'POST', body: JSON.stringify(payload) }),
+    // Delete step
+    deleteStep: (stepId: number) => fetch(`${API_BASE_URL}/api/submissions/steps/${stepId}`, { method: 'DELETE' }),
 };
 
 // Interview Experiences API
@@ -175,21 +181,100 @@ export const mockCriteriaApi = {
 
 // Documents API
 export const documentsApi = {
-    getByCandidate: (candidateId: number) => fetchApi<CandidateDocument[]>(`/api/candidates/${candidateId}/documents`),
+    getByCandidate: (candidateId: number) => fetchApi<CandidateDocument[]>(`/api/documents/candidate/${candidateId}`),
+    getById: (id: number) => fetchApi<CandidateDocument>(`/api/documents/${id}`),
     upload: async (candidateId: number, file: File, documentType: DocumentType, notes?: string) => {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('candidateId', candidateId.toString());
         formData.append('documentType', documentType);
         if (notes) formData.append('notes', notes);
-        const response = await fetch(`${API_BASE_URL}/api/candidates/${candidateId}/documents`, {
+
+        const res = await fetch(`${API_BASE_URL}/api/documents/upload`, {
             method: 'POST',
             body: formData,
         });
-        if (!response.ok) throw new Error('Upload failed');
-        return response.json() as Promise<CandidateDocument>;
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({ message: 'Upload failed' }));
+            throw new Error(error.message || `HTTP ${res.status}`);
+        }
+
+        return res.json() as Promise<CandidateDocument>;
     },
-    download: (candidateId: number, documentId: number) =>
-        `${API_BASE_URL}/api/candidates/${candidateId}/documents/${documentId}/download`,
-    delete: (candidateId: number, documentId: number) =>
-        fetch(`${API_BASE_URL}/api/candidates/${candidateId}/documents/${documentId}`, { method: 'DELETE' }),
+    delete: (id: number) => fetch(`${API_BASE_URL}/api/documents/${id}`, { method: 'DELETE' }),
+    getDownloadUrl: (id: number) => `${API_BASE_URL}/api/documents/${id}/download`,
+};
+
+// === V2.0 Submission Model APIs ===
+
+// Vendor Engagements API
+export const vendorEngagementsApi = {
+    getById: (id: number) => fetchApi<VendorEngagement>(`/api/vendor-engagements/${id}`),
+    create: (data: { candidateId: number; vendorId: number }) =>
+        fetchApi<VendorEngagement>('/api/vendor-engagements', { method: 'POST', body: JSON.stringify(data) }),
+    getAttempts: (id: number, params?: { attemptType?: AssessmentType; track?: string; limit?: number }) => {
+        const qs = new URLSearchParams();
+        if (params?.attemptType) qs.set('attemptType', params.attemptType);
+        if (params?.track) qs.set('track', params.track);
+        if (params?.limit) qs.set('limit', params.limit.toString());
+        return fetchApi<AssessmentAttempt[]>(`/api/vendor-engagements/${id}/attempts${qs.toString() ? '?' + qs : ''}`);
+    },
+    createAttempt: (id: number, data: {
+        attemptType: AssessmentType;
+        track?: string;
+        state?: StepState;
+        result?: StepResult;
+        happenedAt?: string;
+        notes?: string;
+    }) => fetchApi<AssessmentAttempt>(`/api/vendor-engagements/${id}/attempts`, { method: 'POST', body: JSON.stringify(data) }),
+    createOpportunity: (id: number, data: {
+        positionId: number;
+        submittedAt?: string;
+        attachAttemptIds?: number[];
+    }) => fetchApi<Opportunity>(`/api/vendor-engagements/${id}/opportunities`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// Opportunities API (V2.0)
+export const opportunitiesApi = {
+    getById: (id: number) => fetchApi<Opportunity>(`/api/opportunities/${id}`),
+    getSteps: (id: number) => fetchApi<PipelineStep[]>(`/api/opportunities/${id}/steps`),
+    createStep: (id: number, data: {
+        parentStepId?: number | null;
+        type: StepType;
+        state?: StepState;
+        result?: StepResult;
+        round?: number;
+        scheduledAt?: string;
+        happenedAt?: string;
+        feedback?: string;
+        score?: string;
+    }) => fetchApi<PipelineStep>(`/api/opportunities/${id}/steps`, { method: 'POST', body: JSON.stringify(data) }),
+    getAttemptLinks: (id: number) => fetchApi<OpportunityAttemptLink[]>(`/api/opportunities/${id}/attempt-links`),
+    attachAttempt: (id: number, attemptId: number) =>
+        fetchApi<OpportunityAttemptLink[]>(`/api/opportunities/${id}/attempt-links`,
+            { method: 'POST', body: JSON.stringify({ attemptId }) }),
+    detachAttempt: (id: number, attemptId: number) =>
+        fetch(`${API_BASE_URL}/api/opportunities/${id}/attempt-links/${attemptId}`, { method: 'DELETE' }),
+};
+
+// Pipeline Steps API (V2.0)
+export const pipelineStepsApi = {
+    update: (id: number, data: {
+        state?: StepState;
+        result?: StepResult;
+        happenedAt?: string;
+        feedback?: string;
+        score?: string;
+    }) => fetchApi<PipelineStep>(`/api/pipeline-steps/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+};
+
+// Assessment Attempts API (V2.0)
+export const assessmentAttemptsApi = {
+    update: (id: number, data: {
+        state?: StepState;
+        result?: StepResult;
+        happenedAt?: string;
+        notes?: string;
+    }) => fetchApi<AssessmentAttempt>(`/api/assessment-attempts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };

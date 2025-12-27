@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch } from '@/lib/api';
+import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, vendorEngagementsApi, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch, CandidateEngagementResponse } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
@@ -11,6 +11,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { StageProgressCard } from '@/components/StageProgressCard';
 import { SubmissionPipelineCard } from '@/components/SubmissionPipelineCard';
+import { VendorEngagementCard } from '@/components/VendorEngagementCard';
+import { OpportunityDetailModal } from '@/components/OpportunityDetailModal';
 
 const statusColors: Record<string, string> = {
     SUBMITTED: 'bg-blue-500/10 text-blue-600',
@@ -133,7 +135,7 @@ export default function CandidateDetailPage() {
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'workspace' | 'profile' | 'submissions' | 'mocks' | 'documents'>('workspace');
+    const [activeTab, setActiveTab] = useState<'workspace' | 'profile' | 'submissions' | 'engagements' | 'mocks' | 'documents'>('workspace');
     const [transitioning, setTransitioning] = useState(false);
     const [transitionError, setTransitionError] = useState<string | null>(null);
     const [mocks, setMocks] = useState<Mock[]>([]);
@@ -153,31 +155,39 @@ export default function CandidateDetailPage() {
     const [showSubmitForm, setShowSubmitForm] = useState(false);
     const [submitFormData, setSubmitFormData] = useState({
         vendorId: '',
-        clientId: '',
         vendorContact: '',
-        positionTitle: '',
-        screeningType: 'INTERVIEW' as 'OA' | 'INTERVIEW' | 'DIRECT',
         notes: '',
-        hasOa: false,
-        hasVendorScreening: false,
-        totalRounds: undefined as number | undefined,
     });
+    const [engagements, setEngagements] = useState<CandidateEngagementResponse[]>([]);
+    const [selectedOpportunityId, setSelectedOpportunityId] = useState<number | null>(null);
+    const [showCreateEngagement, setShowCreateEngagement] = useState(false);
 
+    const loadEngagements = useCallback(async () => {
+        if (!id) return;
+        try {
+            const data = await candidatesApi.getEngagements(id);
+            setEngagements(data);
+        } catch (error) {
+            console.error('Failed to load engagements:', error);
+        }
+    }, [id]);
     useEffect(() => {
         if (id) {
-            Promise.all([
-                candidatesApi.getById(id),
-                candidatesApi.getTimeline(id),
-                submissionsApi.getByCandidate(id),
-                vendorsApi.getAll(),
-                clientsApi.getAll(),
-                mocksApi.getByCandidate(id),
-                usersApi.getAll(),
-                documentsApi.getByCandidate(id),
-                batchesApi.getAll(),
-            ])
-                .then(([c, t, s, v, cl, m, u, d, b]) => {
-                    setCandidate(c);
+            const loadData = async () => {
+                try {
+                    const [c, t, s, v, cl, m, u, d, b, e] = await Promise.all([
+                        candidatesApi.getById(id).catch(e => { console.error('getById failed:', e); return null; }),
+                        candidatesApi.getTimeline(id).catch(e => { console.error('getTimeline failed:', e); return []; }),
+                        submissionsApi.getByCandidate(id).catch(e => { console.error('getSubmissions failed:', e); return []; }),
+                        vendorsApi.getAll().catch(e => { console.error('getVendors failed:', e); return []; }),
+                        clientsApi.getAll().catch(e => { console.error('getClients failed:', e); return []; }),
+                        mocksApi.getByCandidate(id).catch(e => { console.error('getMocks failed:', e); return []; }),
+                        usersApi.getAll().catch(e => { console.error('getUsers failed:', e); return []; }),
+                        documentsApi.getByCandidate(id).catch(e => { console.error('getDocuments failed:', e); return []; }),
+                        batchesApi.getAll().catch(e => { console.error('getBatches failed:', e); return []; }),
+                        candidatesApi.getEngagements(id).catch(e => { console.error('getEngagements failed:', e); return []; }),
+                    ]);
+                    if (c) setCandidate(c);
                     setTimeline(t);
                     setSubmissions(s);
                     setVendors(v);
@@ -186,9 +196,14 @@ export default function CandidateDetailPage() {
                     setUsers(u);
                     setDocuments(d);
                     setBatches(b);
-                })
-                .catch(console.error)
-                .finally(() => setLoading(false));
+                    setEngagements(e);
+                } catch (err) {
+                    console.error('Failed to load candidate data:', err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            loadData();
         }
     }, [id]);
 
@@ -206,19 +221,13 @@ export default function CandidateDetailPage() {
             await submissionsApi.create({
                 candidate: { id: candidate.id } as Candidate,
                 vendor: { id: Number(submitFormData.vendorId) } as Vendor,
-                client: submitFormData.clientId ? { id: Number(submitFormData.clientId) } as Client : undefined,
                 vendorContact: submitFormData.vendorContact || null,
-                positionTitle: submitFormData.positionTitle,
-                screeningType: submitFormData.screeningType,
                 notes: submitFormData.notes,
-                hasOa: submitFormData.hasOa,
-                hasVendorScreening: submitFormData.hasVendorScreening,
-                totalRounds: submitFormData.totalRounds || null,
             });
             const newSubmissions = await submissionsApi.getByCandidate(id);
             setSubmissions(newSubmissions);
             setShowSubmitForm(false);
-            setSubmitFormData({ vendorId: '', clientId: '', vendorContact: '', positionTitle: '', screeningType: 'INTERVIEW', notes: '', hasOa: false, hasVendorScreening: false, totalRounds: undefined });
+            setSubmitFormData({ vendorId: '', vendorContact: '', notes: '' });
         } catch (error) {
             console.error('Failed to create submission:', error);
         }
@@ -467,6 +476,17 @@ export default function CandidateDetailPage() {
                     Submissions {submissions.length > 0 && `(${submissions.length})`}
                 </button>
                 <button
+                    onClick={() => setActiveTab('engagements')}
+                    className={cn(
+                        "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                        activeTab === 'engagements'
+                            ? "border-primary text-primary"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                >
+                    Vendor Engagements {engagements.length > 0 && `(${engagements.length})`}
+                </button>
+                <button
                     onClick={() => setActiveTab('profile')}
                     className={cn(
                         "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
@@ -549,20 +569,7 @@ export default function CandidateDetailPage() {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="text-sm font-medium mb-1 block">Client</label>
-                                            <select
-                                                value={submitFormData.clientId}
-                                                onChange={e => setSubmitFormData({ ...submitFormData, clientId: e.target.value })}
-                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                                            >
-                                                <option value="">Select client...</option>
-                                                {clients.map(c => (
-                                                    <option key={c.id} value={c.id}>{c.companyName}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium mb-1 block">Contact</label>
+                                            <label className="text-sm font-medium mb-1 block">Contact (optional)</label>
                                             <select
                                                 value={submitFormData.vendorContact}
                                                 onChange={e => setSubmitFormData({ ...submitFormData, vendorContact: e.target.value })}
@@ -574,49 +581,6 @@ export default function CandidateDetailPage() {
                                                 ))}
                                             </select>
                                         </div>
-                                        <div>
-                                            <label className="text-sm font-medium mb-1 block">Position *</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                value={submitFormData.positionTitle}
-                                                onChange={e => setSubmitFormData({ ...submitFormData, positionTitle: e.target.value })}
-                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                                                placeholder="Java Developer"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium mb-1 block">Total Interview Rounds</label>
-                                            <input
-                                                type="number"
-                                                min={1}
-                                                max={5}
-                                                value={submitFormData.totalRounds || ''}
-                                                onChange={e => setSubmitFormData({ ...submitFormData, totalRounds: e.target.value ? Number(e.target.value) : undefined })}
-                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                                                placeholder="e.g., 2"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-6 py-2">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={submitFormData.hasOa || false}
-                                                onChange={e => setSubmitFormData({ ...submitFormData, hasOa: e.target.checked })}
-                                                className="w-4 h-4 rounded"
-                                            />
-                                            <span className="text-sm">Has OA (Online Assessment)</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={submitFormData.hasVendorScreening || false}
-                                                onChange={e => setSubmitFormData({ ...submitFormData, hasVendorScreening: e.target.checked })}
-                                                className="w-4 h-4 rounded"
-                                            />
-                                            <span className="text-sm">Has Vendor Screening</span>
-                                        </label>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-1 block">Notes</label>
@@ -660,6 +624,98 @@ export default function CandidateDetailPage() {
                                 />
                             ))}
                         </div>
+                    )}
+                </div>
+            ) : activeTab === 'engagements' ? (
+                /* Vendor Engagements Tab (V2.0) */
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-lg font-semibold">Vendor Engagements</h2>
+                        <Button onClick={() => setShowCreateEngagement(!showCreateEngagement)}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            New Engagement
+                        </Button>
+                    </div>
+
+                    {showCreateEngagement && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base">Create Vendor Engagement</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    const formData = new FormData(e.currentTarget);
+                                    const vendorId = Number(formData.get('vendorId'));
+                                    if (!vendorId) return;
+                                    try {
+                                        await vendorEngagementsApi.create({
+                                            candidateId: candidate.id,
+                                            vendorId,
+                                        });
+                                        setShowCreateEngagement(false);
+                                        loadEngagements();
+                                    } catch (error) {
+                                        console.error('Failed to create engagement:', error);
+                                    }
+                                }} className="space-y-4">
+                                    <div>
+                                        <label className="text-sm font-medium mb-1 block">Vendor *</label>
+                                        <select
+                                            name="vendorId"
+                                            required
+                                            className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                        >
+                                            <option value="">Select vendor...</option>
+                                            {vendors.map(v => (
+                                                <option key={v.id} value={v.id}>{v.companyName}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button type="submit">
+                                            <Building2 className="w-4 h-4 mr-2" />
+                                            Create Engagement
+                                        </Button>
+                                        <Button type="button" variant="outline" onClick={() => setShowCreateEngagement(false)}>
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {engagements.length === 0 && !showCreateEngagement ? (
+                        <Card>
+                            <CardContent className="py-10 text-center text-muted-foreground">
+                                <p className="mb-4">No vendor engagements yet.</p>
+                                <Button variant="outline" onClick={() => setShowCreateEngagement(true)}>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Create your first engagement
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="space-y-4">
+                            {engagements.map(engagement => (
+                                <VendorEngagementCard
+                                    key={engagement.id}
+                                    engagement={engagement}
+                                    onUpdate={loadEngagements}
+                                    onOpenOpportunity={(oppId) => setSelectedOpportunityId(oppId)}
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Opportunity Detail Modal */}
+                    {selectedOpportunityId && (
+                        <OpportunityDetailModal
+                            opportunityId={selectedOpportunityId}
+                            onClose={() => setSelectedOpportunityId(null)}
+                            onUpdate={loadEngagements}
+                        />
                     )}
                 </div>
             ) : activeTab === 'profile' ? (
@@ -1274,11 +1330,11 @@ export default function CandidateDetailPage() {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2">
-                                                <a href={documentsApi.download(id, doc.id)} target="_blank" rel="noopener noreferrer">
+                                                <a href={documentsApi.getDownloadUrl(doc.id)} target="_blank" rel="noopener noreferrer">
                                                     <Button variant="ghost" size="sm"><Download className="w-4 h-4" /></Button>
                                                 </a>
                                                 <Button variant="ghost" size="sm" onClick={async () => {
-                                                    await documentsApi.delete(id, doc.id);
+                                                    await documentsApi.delete(doc.id);
                                                     setDocuments(documents.filter(d => d.id !== doc.id));
                                                 }}><Trash2 className="w-4 h-4 text-red-500" /></Button>
                                             </div>

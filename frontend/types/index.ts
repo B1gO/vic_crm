@@ -85,14 +85,18 @@ export type CloseReason =
 
 export type OfferType = 'W2' | 'C2C';
 
-export type SubmissionStatus =
-    | 'SUBMITTED'
-    | 'OA_SCHEDULED' | 'OA_PASSED' | 'OA_FAILED'
-    | 'VENDOR_SCREENING_SCHEDULED' | 'VENDOR_SCREENING_PASSED' | 'VENDOR_SCREENING_FAILED'
-    | 'CLIENT_INTERVIEW'
-    | 'OFFERED' | 'OFFER_ACCEPTED' | 'OFFER_DECLINED'
-    | 'PLACED' | 'REJECTED' | 'WITHDRAWN';
-export type ScreeningType = 'OA' | 'INTERVIEW' | 'DIRECT';
+// V2: Simplified submission status (manual update)
+export type SubmissionStatus = 'ACTIVE' | 'OFFERED' | 'PLACED' | 'REJECTED' | 'WITHDRAWN';
+
+// Step types for the tree-based pipeline
+export type StepType = 'OA' | 'VENDOR_SCREENING' | 'CLIENT_INTERVIEW' | 'OFFER' | 'OFFER_ACCEPTED' | 'OFFER_DECLINED' | 'PLACED' | 'REJECTED' | 'WITHDRAWN';
+export type StepResult = 'PENDING' | 'PASS' | 'FAIL';
+
+// V2.0: Vendor Engagement and Opportunity types
+export type AssessmentType = 'OA' | 'VENDOR_SCREENING';
+export type StepState = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED';
+export type EngagementStatus = 'ACTIVE' | 'INACTIVE';
+export type OpportunityStatus = 'ACTIVE' | 'INTERVIEWING' | 'OFFERED' | 'PLACED';
 
 // === Entities ===
 export interface User {
@@ -182,46 +186,46 @@ export interface Candidate {
     updatedAt: string;
 }
 
+// Position entity (V2)
+export interface Position {
+    id: number;
+    title: string;
+    client: Client;
+    description: string | null;
+    requirements: string | null;
+    location: string | null;
+    status: string; // OPEN, CLOSED, FILLED
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Simplified Submission (V2)
 export interface Submission {
     id: number;
     candidate: Candidate;
     vendor: Vendor;
-    client: Client | null;
     vendorContact: string | null;
-    positionTitle: string;
     status: SubmissionStatus;
-    screeningType: ScreeningType | null;
-    currentRound: number;
-    totalRounds: number | null;
-    hasOa: boolean;
-    hasVendorScreening: boolean;
-    oaScheduledAt: string | null;
-    oaScore: string | null;
-    oaFeedback: string | null;
-    vendorScreeningAt: string | null;
-    vendorScreeningFeedback: string | null;
-    interviewScheduledAt: string | null;
-    lastFeedback: string | null;
-    failReason: string | null;
-    offerDate: string | null;
-    offerDetails: string | null;
     notes: string | null;
     submittedAt: string;
     updatedAt: string;
 }
 
-export interface SubmissionEvent {
+// SubmissionStep for tree-based pipeline (V2)
+export interface SubmissionStep {
     id: number;
     submission: { id: number };
-    fromStatus: SubmissionStatus | null;
-    toStatus: SubmissionStatus;
-    eventType: string;
+    parentStep: { id: number } | null;
+    type: StepType;
+    position: Position | null;
     round: number | null;
-    title: string;
-    notes: string | null;
-    result: string | null;
-    actor: User | null;
-    eventDate: string;
+    scheduledAt: string | null;
+    completedAt: string | null;
+    result: StepResult;
+    feedback: string | null;
+    score: string | null;
+    createdAt: string;
 }
 
 export interface InterviewExperience {
@@ -307,4 +311,114 @@ export interface CandidateDocument {
     storageType: string;
     uploadedAt: string;
     notes: string;
+}
+
+// === V2.0 Submission Model ===
+
+// VendorEngagement: Candidate × Vendor relationship
+export interface VendorEngagement {
+    id: number;
+    candidate: { id: number };
+    vendor: Vendor;
+    status: EngagementStatus;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// AssessmentAttempt: Vendor-side OA/Screening
+export interface AssessmentAttempt {
+    id: number;
+    vendorEngagement: { id: number };
+    attemptType: AssessmentType;
+    track: string | null;
+    state: StepState;
+    result: StepResult;
+    happenedAt: string | null;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Opportunity: Submission instance (VendorEngagement × Position)
+export interface Opportunity {
+    id: number;
+    vendorEngagement: VendorEngagement;
+    position: Position;
+    submittedAt: string | null;
+    status: OpportunityStatus;
+    statusOverride: OpportunityStatus | null;
+    notes: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// PipelineStep: Client-side step (tree structure)
+export interface PipelineStep {
+    id: number;
+    opportunity: { id: number };
+    parentStep: { id: number } | null;
+    type: StepType;
+    state: StepState;
+    result: StepResult;
+    round: number | null;
+    scheduledAt: string | null;
+    happenedAt: string | null;
+    feedback: string | null;
+    score: string | null;
+    createdAt: string;
+}
+
+// OpportunityAttemptLink: Weak binding between Opportunity and Attempt
+export interface OpportunityAttemptLink {
+    id: number;
+    opportunity: { id: number };
+    attempt: AssessmentAttempt;
+    createdAt: string;
+}
+
+// CandidateEngagementResponse: Aggregated view for candidate detail page
+export interface VendorSummary {
+    id: number;
+    companyName: string;
+    contactName: string | null;
+    email: string | null;
+    phone: string | null;
+}
+
+export interface AssessmentAttemptSummary {
+    id: number;
+    attemptType: AssessmentType;
+    track: string | null;
+    state: StepState;
+    result: StepResult;
+    happenedAt: string | null;
+}
+
+export interface PipelineStepSummary {
+    id: number;
+    type: StepType;
+    state: StepState;
+    result: StepResult;
+    round?: number;
+    happenedAt: string | null;
+}
+
+export interface OpportunitySummary {
+    id: number;
+    positionId: number;
+    positionTitle: string;
+    clientId: number;
+    clientName: string;
+    status: OpportunityStatus;
+    submittedAt: string | null;
+    latestStep: PipelineStepSummary | null;
+}
+
+export interface CandidateEngagementResponse {
+    id: number;
+    status: EngagementStatus;
+    vendor: VendorSummary;
+    attempts: AssessmentAttemptSummary[];
+    opportunities: OpportunitySummary[];
 }

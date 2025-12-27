@@ -3,10 +3,12 @@ package com.vic.crm.controller;
 import com.vic.crm.dto.SubStatusUpdateRequest;
 import com.vic.crm.dto.TimelineEventRequest;
 import com.vic.crm.dto.TransitionRequest;
+import com.vic.crm.dto.CandidateEngagementResponse;
 import com.vic.crm.entity.Candidate;
 import com.vic.crm.entity.TimelineEvent;
 import com.vic.crm.entity.User;
 import com.vic.crm.enums.CandidateStage;
+import com.vic.crm.service.CandidateEngagementService;
 import com.vic.crm.service.CandidateService;
 import com.vic.crm.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import java.util.List;
 public class CandidateController {
 
     private final CandidateService candidateService;
+    private final CandidateEngagementService engagementService;
     private final UserService userService;
 
     @GetMapping
@@ -34,6 +37,11 @@ public class CandidateController {
     @GetMapping("/{id}")
     public Candidate getById(@PathVariable Long id) {
         return candidateService.findById(id);
+    }
+
+    @GetMapping("/{id}/engagements")
+    public List<CandidateEngagementResponse> getEngagements(@PathVariable Long id) {
+        return engagementService.getEngagements(id);
     }
 
     @PostMapping

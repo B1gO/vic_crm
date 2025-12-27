@@ -1,7 +1,7 @@
 package com.vic.crm.entity;
 
-import com.vic.crm.enums.ScreeningType;
-import com.vic.crm.enums.SubmissionStatus;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vic.crm.enums.EngagementStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,17 +12,15 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
-/**
- * Represents a candidate submission to a vendor.
- * Steps are tracked separately in SubmissionStep entity.
- */
 @Entity
-@Table(name = "submissions")
+@Table(name = "vendor_engagements",
+        uniqueConstraints = @UniqueConstraint(columnNames = { "candidate_id", "vendor_id" }))
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Submission {
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+public class VendorEngagement {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,19 +34,16 @@ public class Submission {
     @JoinColumn(name = "vendor_id", nullable = false)
     private Vendor vendor;
 
-    // Vendor contact who submitted
-    private String vendorContact;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private SubmissionStatus status = SubmissionStatus.ACTIVE;
+    private EngagementStatus status = EngagementStatus.ACTIVE;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
 
     @CreationTimestamp
-    private LocalDateTime submittedAt;
+    private LocalDateTime createdAt;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
