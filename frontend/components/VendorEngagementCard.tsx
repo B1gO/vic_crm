@@ -71,23 +71,13 @@ export function VendorEngagementCard({
     const [selectedPositionId, setSelectedPositionId] = useState<number | null>(null);
     const [selectedAttemptIds, setSelectedAttemptIds] = useState<number[]>([]);
     const [vendorPositions, setVendorPositions] = useState<Position[]>([]);
-    const [otherPositions, setOtherPositions] = useState<Position[]>([]);
 
     const loadPositions = async () => {
         try {
-            // Load vendor-specific positions and all open positions
-            const [vendorPos, allOpen] = await Promise.all([
-                positionsApi.getByVendor(engagement.vendor.id),
-                positionsApi.getOpen()
-            ]);
-            // Filter out vendor positions from "other" list
-            const vendorPosIds = new Set(vendorPos.map(p => p.id));
-            const otherPos = allOpen.filter(p => !vendorPosIds.has(p.id));
-
+            // Only load positions from this vendor
+            const vendorPos = await positionsApi.getByVendor(engagement.vendor.id);
             setVendorPositions(vendorPos);
-            setOtherPositions(otherPos);
-            // Combine for backward compatibility with existing code
-            setPositions([...vendorPos, ...otherPos]);
+            setPositions(vendorPos);
         } catch (error) {
             console.error('Failed to load positions:', error);
         }
@@ -311,23 +301,14 @@ export function VendorEngagementCard({
                                         className="w-full px-3 py-2 border rounded-md text-sm"
                                     >
                                         <option value="">Select position...</option>
-                                        {vendorPositions.length > 0 && (
-                                            <optgroup label={`From ${engagement.vendor.companyName}`}>
-                                                {vendorPositions.map((pos) => (
-                                                    <option key={pos.id} value={pos.id}>
-                                                        {pos.client?.companyName} - {pos.title} {pos.track ? `(${pos.track})` : ''}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
-                                        )}
-                                        {otherPositions.length > 0 && (
-                                            <optgroup label="Other Open Positions">
-                                                {otherPositions.map((pos) => (
-                                                    <option key={pos.id} value={pos.id}>
-                                                        {pos.client?.companyName} - {pos.title}
-                                                    </option>
-                                                ))}
-                                            </optgroup>
+                                        {vendorPositions.length > 0 ? (
+                                            vendorPositions.map((pos) => (
+                                                <option key={pos.id} value={pos.id}>
+                                                    {pos.client?.companyName} - {pos.title} {pos.track ? `(${pos.track})` : ''}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option value="" disabled>No positions from this vendor</option>
                                         )}
                                     </select>
                                 </div>
