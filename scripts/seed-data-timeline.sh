@@ -378,27 +378,150 @@ post_json_silent "/api/submissions" '{
   "notes":"Just submitted to Bayone."
 }'
 
-# ====== POSITIONS (V2 - for steps) ======
+# ====== POSITIONS (V2 - with sourceVendor and extended fields) ======
 echo "  Creating positions..."
+
+# Positions from Infobahn (Vendor ID 1) - works with clients 1,2,4,5
 post_json_silent "/api/positions" '{
-  "title":"Java Backend Developer",
+  "title":"sfas",
   "client":{"id":2},
+  "sourceVendor":{"id":1},
+  "teamName":"Cloud Platform",
+  "track":"backend",
+  "employmentType":"CONTRACT",
   "location":"Seattle, WA",
+  "billRate":85,
+  "payRate":65,
+  "headcount":2,
   "status":"OPEN"
 }'
 
 post_json_silent "/api/positions" '{
-  "title":"Senior Frontend Engineer",
-  "client":{"id":1},
-  "location":"San Jose, CA",
+  "title":"Java Backend Developer",
+  "client":{"id":2},
+  "sourceVendor":{"id":1},
+  "teamName":"eCommerce",
+  "track":"backend",
+  "employmentType":"CONTRACT",
+  "location":"Bentonville, AR",
+  "billRate":80,
+  "payRate":60,
+  "headcount":3,
   "status":"OPEN"
 }'
 
 post_json_silent "/api/positions" '{
   "title":"Software Engineer II",
   "client":{"id":4},
-  "location":"Remote",
+  "sourceVendor":{"id":1},
+  "teamName":"Payments",
+  "track":"fullstack",
+  "employmentType":"C2H",
+  "location":"San Jose, CA",
+  "billRate":90,
+  "payRate":70,
+  "headcount":1,
   "status":"OPEN"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"QA Engineer",
+  "client":{"id":5},
+  "sourceVendor":{"id":1},
+  "teamName":"TurboTax",
+  "track":"qa",
+  "employmentType":"CONTRACT",
+  "location":"Mountain View, CA",
+  "billRate":70,
+  "payRate":55,
+  "headcount":2,
+  "status":"ON_HOLD"
+}'
+
+# Positions from Bayone (Vendor ID 2) - works with clients 1,2,4
+post_json_silent "/api/positions" '{
+  "title":"Senior Frontend Engineer",
+  "client":{"id":1},
+  "sourceVendor":{"id":2},
+  "teamName":"Search Experience",
+  "track":"frontend",
+  "employmentType":"CONTRACT",
+  "location":"San Jose, CA",
+  "billRate":95,
+  "payRate":75,
+  "headcount":1,
+  "status":"OPEN"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"ebay 001",
+  "client":{"id":1},
+  "sourceVendor":{"id":2},
+  "teamName":"Buyer Platform",
+  "track":"backend",
+  "employmentType":"FULLTIME",
+  "location":"Remote",
+  "billRate":0,
+  "payRate":0,
+  "headcount":2,
+  "status":"OPEN"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"wefsd",
+  "client":{"id":2},
+  "sourceVendor":{"id":2},
+  "teamName":"Supply Chain",
+  "track":"fullstack",
+  "employmentType":"CONTRACT",
+  "location":"Dallas, TX",
+  "billRate":78,
+  "payRate":58,
+  "headcount":1,
+  "status":"CLOSED"
+}'
+
+# Positions from Inspyr (Vendor ID 3) - works with client 3 (Apple)
+post_json_silent "/api/positions" '{
+  "title":"iOS Developer",
+  "client":{"id":3},
+  "sourceVendor":{"id":3},
+  "teamName":"Apple Music",
+  "track":"frontend",
+  "employmentType":"CONTRACT",
+  "location":"Cupertino, CA",
+  "billRate":120,
+  "payRate":95,
+  "headcount":2,
+  "status":"OPEN"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"Backend Engineer - iCloud",
+  "client":{"id":3},
+  "sourceVendor":{"id":3},
+  "teamName":"iCloud Services",
+  "track":"backend",
+  "employmentType":"CONTRACT",
+  "location":"Cupertino, CA",
+  "billRate":115,
+  "payRate":90,
+  "headcount":3,
+  "status":"OPEN"
+}'
+
+post_json_silent "/api/positions" '{
+  "title":"DevOps Engineer",
+  "client":{"id":3},
+  "sourceVendor":{"id":3},
+  "teamName":"Infrastructure",
+  "track":"devops",
+  "employmentType":"C2H",
+  "location":"Austin, TX",
+  "billRate":100,
+  "payRate":80,
+  "headcount":1,
+  "status":"ON_HOLD"
 }'
 
 # ====== TIMELINE EVENTS ======
@@ -531,4 +654,5 @@ echo "   - 3 vendors"
 echo "   - 10 candidates at various stages"
 echo "   - 4 mocks (screening and theory/real for eligible candidates)"
 echo "   - 3 submissions"
+echo "   - 10 positions (4 Infobahn, 3 Bayone, 3 Inspyr)"
 echo "   - Timeline events for journey tracking"
