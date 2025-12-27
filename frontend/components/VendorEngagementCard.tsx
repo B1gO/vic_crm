@@ -73,8 +73,8 @@ export function VendorEngagementCard({
 
     const loadPositions = async () => {
         try {
-            const data = await positionsApi.getOpen();
-            setPositions(data);
+            const data = await positionsApi.getByVendor(engagement.vendor.id);
+            setPositions(data.filter((pos) => pos.status === 'OPEN'));
         } catch (error) {
             console.error('Failed to load positions:', error);
         }
