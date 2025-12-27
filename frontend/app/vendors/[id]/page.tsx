@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { vendorsApi, submissionsApi, positionsApi, clientsApi, Vendor, Submission, VendorContact, Position, Client } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building2, Mail, Phone, Users, TrendingUp, CheckCircle, XCircle, Clock, Building, UserCircle, X, Linkedin, FileText, Briefcase, Plus, MapPin, DollarSign } from 'lucide-react';
+import { ArrowLeft, Building2, Mail, Phone, Users, TrendingUp, CheckCircle, XCircle, Clock, Building, UserCircle, X, Linkedin, FileText, Briefcase, Plus, MapPin, DollarSign, Pencil } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
     VENDOR_SCREENING: 'bg-yellow-500/10 text-yellow-600',
@@ -58,6 +58,7 @@ export default function VendorDetailPage() {
     // Position form state
     const [showPositionForm, setShowPositionForm] = useState(false);
     const [positionFormLoading, setPositionFormLoading] = useState(false);
+    const [editingPositionId, setEditingPositionId] = useState<number | null>(null);
     const [positionFormData, setPositionFormData] = useState({
         title: '',
         clientId: '' as string | number,
@@ -113,16 +114,36 @@ export default function VendorDetailPage() {
             status: 'OPEN',
             description: '',
         });
+        setEditingPositionId(null);
         setShowPositionForm(false);
     };
 
-    const handleCreatePosition = async (e: React.FormEvent) => {
+    const handleEditPosition = (pos: Position) => {
+        setEditingPositionId(pos.id);
+        setPositionFormData({
+            title: pos.title || '',
+            clientId: pos.client?.id || '',
+            teamName: pos.teamName || '',
+            hiringManager: pos.hiringManager || '',
+            track: pos.track || '',
+            employmentType: pos.employmentType || 'CONTRACT',
+            location: pos.location || '',
+            billRate: pos.billRate?.toString() || '',
+            payRate: pos.payRate?.toString() || '',
+            headcount: pos.headcount?.toString() || '1',
+            status: pos.status || 'OPEN',
+            description: pos.description || '',
+        });
+        setShowPositionForm(true);
+    };
+
+    const handleSavePosition = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!positionFormData.title || !positionFormData.clientId) return;
 
         setPositionFormLoading(true);
         try {
-            // Send only IDs for nested objects - backend expects { id: number } format
+            // Build payload - same for create and update
             const payload: Record<string, unknown> = {
                 title: positionFormData.title,
                 client: { id: Number(positionFormData.clientId) },
@@ -140,14 +161,19 @@ export default function VendorDetailPage() {
             if (positionFormData.headcount) payload.headcount = Number(positionFormData.headcount);
             if (positionFormData.description) payload.description = positionFormData.description;
 
-            console.log('Creating position with payload:', JSON.stringify(payload, null, 2));
-            await positionsApi.create(payload as Partial<Position>);
+            if (editingPositionId) {
+                // Update existing position
+                await positionsApi.update(editingPositionId, payload as Partial<Position>);
+            } else {
+                // Create new position
+                await positionsApi.create(payload as Partial<Position>);
+            }
             resetPositionForm();
             // Reload positions
             const updatedPositions = await positionsApi.getByVendor(vendorId);
             setPositions(updatedPositions);
         } catch (error) {
-            console.error('Failed to create position:', error);
+            console.error('Failed to save position:', error);
         } finally {
             setPositionFormLoading(false);
         }
@@ -450,9 +476,9 @@ export default function VendorDetailPage() {
                     </Button>
                 </CardHeader>
                 <CardContent>
-                    {/* Create Position Form */}
+                    {/* Create/Edit Position Form */}
                     {showPositionForm && (
-                        <form onSubmit={handleCreatePosition} className="mb-6 p-4 bg-muted/50 rounded-lg border border-border space-y-4">
+                        <form onSubmit={handleSavePosition} className="mb-6 p-4 bg-muted/50 rounded-lg border border-border space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div className="col-span-2">
                                     <label className="text-sm font-medium mb-1 block">Title *</label>
@@ -592,7 +618,7 @@ export default function VendorDetailPage() {
                             </div>
                             <div className="flex gap-2">
                                 <Button type="submit" size="sm" disabled={positionFormLoading}>
-                                    {positionFormLoading ? 'Creating...' : 'Create Position'}
+                                    {positionFormLoading ? 'Saving...' : (editingPositionId ? 'Update Position' : 'Create Position')}
                                 </Button>
                                 <Button type="button" size="sm" variant="outline" onClick={resetPositionForm}>
                                     Cancel
@@ -653,6 +679,14 @@ export default function VendorDetailPage() {
                                             }`}>
                                             {pos.status}
                                         </span>
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => handleEditPosition(pos)}
+                                            className="ml-2"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </Button>
                                     </div>
                                 </div>
                             ))}
