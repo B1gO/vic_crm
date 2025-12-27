@@ -353,32 +353,7 @@ post_json_silent "/api/mocks" '{
   "summary":"Ready for client-facing interviews."
 }'
 
-# ====== SUBMISSIONS (V2 - simplified) ======
-echo "  Creating submissions..."
-# Kevin (ID 10) - he has an offer
-post_json_silent "/api/submissions" '{
-  "candidate":{"id":10},
-  "vendor":{"id":1},
-  "status":"OFFERED",
-  "notes":"Final round completed. Offer extended."
-}'
-
-# Mingkai (ID 4) - active submissions in marketing
-post_json_silent "/api/submissions" '{
-  "candidate":{"id":4},
-  "vendor":{"id":1},
-  "status":"ACTIVE",
-  "notes":"Submitted to Infobahn. Waiting for next steps."
-}'
-
-post_json_silent "/api/submissions" '{
-  "candidate":{"id":4},
-  "vendor":{"id":2},
-  "status":"ACTIVE",
-  "notes":"Just submitted to Bayone."
-}'
-
-# ====== POSITIONS (V2 - for steps) ======
+# ====== POSITIONS ======
 echo "  Creating positions..."
 post_json_silent "/api/positions" '{
   "title":"Java Backend Developer",
@@ -530,5 +505,4 @@ echo "   - 5 clients"
 echo "   - 3 vendors"
 echo "   - 10 candidates at various stages"
 echo "   - 4 mocks (screening and theory/real for eligible candidates)"
-echo "   - 3 submissions"
 echo "   - Timeline events for journey tracking"

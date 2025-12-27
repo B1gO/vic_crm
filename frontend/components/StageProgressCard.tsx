@@ -20,7 +20,7 @@ const MAIN_STAGES: { stage: CandidateStage; label: string; icon: React.ReactNode
     { stage: 'TRAINING', label: 'Training', icon: <BookOpen className="w-4 h-4" />, description: 'Active training period' },
     { stage: 'RESUME', label: 'Resume', icon: <FileText className="w-4 h-4" />, description: 'Resume preparation' },
     { stage: 'MOCKING', label: 'Mocking', icon: <Star className="w-4 h-4" />, description: 'Mock interviews' },
-    { stage: 'MARKETING', label: 'Marketing', icon: <Zap className="w-4 h-4" />, description: 'Client submissions' },
+    { stage: 'MARKETING', label: 'Marketing', icon: <Zap className="w-4 h-4" />, description: 'Client outreach' },
     { stage: 'OFFERED', label: 'Offered', icon: <FileText className="w-4 h-4" />, description: 'Offer received' },
     { stage: 'PLACED', label: 'Placed', icon: <Check className="w-4 h-4" />, description: 'Started work' },
 ];

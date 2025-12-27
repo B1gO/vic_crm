@@ -10,12 +10,12 @@
 
 ### 非目标
 - 不做权限/认证体系（保持现状）。
-- 不强绑定 Submission 与 OFFERED/PLACED。
+- 不强绑定 Vendor Engagement/Opportunity 与 OFFERED/PLACED。
 
 ## 产品决策（已确认）
 - 允许 ELIMINATED/WITHDRAWN 复活，不需要审批，但必须填写 `reactivateReason`。
 - DIRECT_MARKETING 由 recruiter 自主触发，不需要审批，但需要资料完整度校验。
-- OFFERED/PLACED 不强制绑定 Submission。
+- OFFERED/PLACED 不强制绑定 Vendor Engagement/Opportunity。
 - 批次分配允许跳过 screening。
 - Batch End 仅推进 TRAINING 阶段的候选人。
 
@@ -141,8 +141,8 @@ flowchart LR
 - 创建 Real Mock 仅允许在 `MOCK_THEORY_PASSED`
 - 完成 Real Mock: Pass -> `MOCK_REAL_PASSED` + 自动进入 MARKETING
 
-### Marketing / Submissions
-- Submission 事件驱动 Timeline（按 `submissionId` 关联）
+### Marketing / Engagements
+- Vendor Engagement/Opportunity 事件驱动 Timeline（按 engagement/opportunity 关联）
 - 不再使用 INTERVIEWING stage
 
 ## 手动覆盖

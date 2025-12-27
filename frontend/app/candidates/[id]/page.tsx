@@ -2,51 +2,16 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { candidatesApi, submissionsApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, vendorEngagementsApi, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, WorkAuth, Submission, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch, CandidateEngagementResponse } from '@/lib/api';
+import { candidatesApi, vendorsApi, clientsApi, usersApi, mocksApi, documentsApi, batchesApi, vendorEngagementsApi, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, WorkAuth, Vendor, Client, User, Mock, CandidateDocument, DocumentType, Batch, CandidateEngagementResponse } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
-import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X, Plus, Building2, Send, Star, MessageSquare, Upload, Download, Trash2, File, Pencil } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mail, Phone, MapPin, GraduationCap, Check, Clock, FileText, Users, BookOpen, X, Plus, Building2, Star, MessageSquare, Upload, Download, Trash2, File, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { StageProgressCard } from '@/components/StageProgressCard';
-import { SubmissionPipelineCard } from '@/components/SubmissionPipelineCard';
 import { VendorEngagementCard } from '@/components/VendorEngagementCard';
 import { OpportunityDetailModal } from '@/components/OpportunityDetailModal';
-
-const statusColors: Record<string, string> = {
-    SUBMITTED: 'bg-blue-500/10 text-blue-600',
-    OA_SCHEDULED: 'bg-amber-500/10 text-amber-600',
-    OA_PASSED: 'bg-green-500/10 text-green-600',
-    OA_FAILED: 'bg-red-500/10 text-red-600',
-    VENDOR_SCREENING_SCHEDULED: 'bg-amber-500/10 text-amber-600',
-    VENDOR_SCREENING_PASSED: 'bg-green-500/10 text-green-600',
-    VENDOR_SCREENING_FAILED: 'bg-red-500/10 text-red-600',
-    CLIENT_INTERVIEW: 'bg-purple-500/10 text-purple-600',
-    OFFERED: 'bg-emerald-500/10 text-emerald-600',
-    OFFER_ACCEPTED: 'bg-green-500/10 text-green-600',
-    OFFER_DECLINED: 'bg-orange-500/10 text-orange-600',
-    PLACED: 'bg-emerald-500/10 text-emerald-600',
-    REJECTED: 'bg-red-500/10 text-red-600',
-    WITHDRAWN: 'bg-gray-500/10 text-gray-600',
-};
-
-const statusLabels: Record<string, string> = {
-    SUBMITTED: 'Submitted',
-    OA_SCHEDULED: 'OA Scheduled',
-    OA_PASSED: 'OA Passed',
-    OA_FAILED: 'OA Failed',
-    VENDOR_SCREENING_SCHEDULED: 'VS Scheduled',
-    VENDOR_SCREENING_PASSED: 'VS Passed',
-    VENDOR_SCREENING_FAILED: 'VS Failed',
-    CLIENT_INTERVIEW: 'Client Interview',
-    OFFERED: 'Offered',
-    OFFER_ACCEPTED: 'Offer Accepted',
-    OFFER_DECLINED: 'Offer Declined',
-    PLACED: 'Placed',
-    REJECTED: 'Rejected',
-    WITHDRAWN: 'Withdrawn',
-};
 
 const allowedTransitions: Record<CandidateStage, CandidateStage[]> = {
     SOURCING: ['TRAINING', 'MARKETING', 'ELIMINATED', 'WITHDRAWN', 'ON_HOLD'],
@@ -131,11 +96,10 @@ export default function CandidateDetailPage() {
 
     const [candidate, setCandidate] = useState<Candidate | null>(null);
     const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
-    const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'workspace' | 'profile' | 'submissions' | 'engagements' | 'mocks' | 'documents'>('workspace');
+    const [activeTab, setActiveTab] = useState<'workspace' | 'profile' | 'engagements' | 'mocks' | 'documents'>('workspace');
     const [transitioning, setTransitioning] = useState(false);
     const [transitionError, setTransitionError] = useState<string | null>(null);
     const [mocks, setMocks] = useState<Mock[]>([]);
@@ -152,12 +116,6 @@ export default function CandidateDetailPage() {
     const [selectedSubStatus, setSelectedSubStatus] = useState<CandidateSubStatus | ''>('');
     const [subStatusReason, setSubStatusReason] = useState('');
     const [subStatusUpdating, setSubStatusUpdating] = useState(false);
-    const [showSubmitForm, setShowSubmitForm] = useState(false);
-    const [submitFormData, setSubmitFormData] = useState({
-        vendorId: '',
-        vendorContact: '',
-        notes: '',
-    });
     const [engagements, setEngagements] = useState<CandidateEngagementResponse[]>([]);
     const [selectedOpportunityId, setSelectedOpportunityId] = useState<number | null>(null);
     const [showCreateEngagement, setShowCreateEngagement] = useState(false);
@@ -175,10 +133,9 @@ export default function CandidateDetailPage() {
         if (id) {
             const loadData = async () => {
                 try {
-                    const [c, t, s, v, cl, m, u, d, b, e] = await Promise.all([
+                    const [c, t, v, cl, m, u, d, b, e] = await Promise.all([
                         candidatesApi.getById(id).catch(e => { console.error('getById failed:', e); return null; }),
                         candidatesApi.getTimeline(id).catch(e => { console.error('getTimeline failed:', e); return []; }),
-                        submissionsApi.getByCandidate(id).catch(e => { console.error('getSubmissions failed:', e); return []; }),
                         vendorsApi.getAll().catch(e => { console.error('getVendors failed:', e); return []; }),
                         clientsApi.getAll().catch(e => { console.error('getClients failed:', e); return []; }),
                         mocksApi.getByCandidate(id).catch(e => { console.error('getMocks failed:', e); return []; }),
@@ -189,7 +146,6 @@ export default function CandidateDetailPage() {
                     ]);
                     if (c) setCandidate(c);
                     setTimeline(t);
-                    setSubmissions(s);
                     setVendors(v);
                     setClients(cl);
                     setMocks(m);
@@ -213,25 +169,6 @@ export default function CandidateDetailPage() {
             setSelectedSubStatus(candidate.subStatus);
         }
     }, [candidate]);
-
-    const handleSubmitToVendor = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!candidate) return;
-        try {
-            await submissionsApi.create({
-                candidate: { id: candidate.id } as Candidate,
-                vendor: { id: Number(submitFormData.vendorId) } as Vendor,
-                vendorContact: submitFormData.vendorContact || null,
-                notes: submitFormData.notes,
-            });
-            const newSubmissions = await submissionsApi.getByCandidate(id);
-            setSubmissions(newSubmissions);
-            setShowSubmitForm(false);
-            setSubmitFormData({ vendorId: '', vendorContact: '', notes: '' });
-        } catch (error) {
-            console.error('Failed to create submission:', error);
-        }
-    };
 
     const promptValue = (message: string) => {
         const value = window.prompt(message);
@@ -465,17 +402,6 @@ export default function CandidateDetailPage() {
                     Workspace
                 </button>
                 <button
-                    onClick={() => setActiveTab('submissions')}
-                    className={cn(
-                        "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                        activeTab === 'submissions'
-                            ? "border-primary text-primary"
-                            : "border-transparent text-muted-foreground hover:text-foreground"
-                    )}
-                >
-                    Submissions {submissions.length > 0 && `(${submissions.length})`}
-                </button>
-                <button
                     onClick={() => setActiveTab('engagements')}
                     className={cn(
                         "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
@@ -535,99 +461,8 @@ export default function CandidateDetailPage() {
                     error={transitionError}
                     onClearError={() => setTransitionError(null)}
                 />
-            ) : activeTab === 'submissions' ? (
-                /* Submissions Tab */
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-semibold">Vendor Submissions</h2>
-                        <Button onClick={() => setShowSubmitForm(!showSubmitForm)}>
-                            <Plus className="w-4 h-4 mr-2" />
-                            New Submission
-                        </Button>
-                    </div>
-
-                    {showSubmitForm && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">Submit to Vendor</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={handleSubmitToVendor} className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-sm font-medium mb-1 block">Vendor *</label>
-                                            <select
-                                                required
-                                                value={submitFormData.vendorId}
-                                                onChange={e => setSubmitFormData({ ...submitFormData, vendorId: e.target.value })}
-                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                                            >
-                                                <option value="">Select vendor...</option>
-                                                {vendors.map(v => (
-                                                    <option key={v.id} value={v.id}>{v.companyName}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="text-sm font-medium mb-1 block">Contact (optional)</label>
-                                            <select
-                                                value={submitFormData.vendorContact}
-                                                onChange={e => setSubmitFormData({ ...submitFormData, vendorContact: e.target.value })}
-                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                                            >
-                                                <option value="">Select contact...</option>
-                                                {submitFormData.vendorId && vendors.find(v => v.id === Number(submitFormData.vendorId))?.contacts?.map((c, idx) => (
-                                                    <option key={idx} value={c.name}>{c.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="text-sm font-medium mb-1 block">Notes</label>
-                                        <textarea
-                                            value={submitFormData.notes}
-                                            onChange={e => setSubmitFormData({ ...submitFormData, notes: e.target.value })}
-                                            className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                                            rows={2}
-                                            placeholder="Any notes about this submission..."
-                                        />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <Button type="submit">
-                                            <Send className="w-4 h-4 mr-2" />
-                                            Submit
-                                        </Button>
-                                        <Button type="button" variant="outline" onClick={() => setShowSubmitForm(false)}>
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </form>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {submissions.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-10 text-center text-muted-foreground">
-                                No submissions yet. Submit this candidate to a vendor!
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="space-y-3">
-                            {submissions.map(sub => (
-                                <SubmissionPipelineCard
-                                    key={sub.id}
-                                    submission={sub}
-                                    onUpdate={(updated) => {
-                                        setSubmissions(prev => prev.map(s => s.id === updated.id ? updated : s));
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
             ) : activeTab === 'engagements' ? (
-                /* Vendor Engagements Tab (V2.0) */
+                /* Vendor Engagements Tab */
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
                         <h2 className="text-lg font-semibold">Vendor Engagements</h2>
@@ -1289,7 +1124,7 @@ export default function CandidateDetailPage() {
                                             value={uploadForm.notes}
                                             onChange={e => setUploadForm({ ...uploadForm, notes: e.target.value })}
                                             className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                                            placeholder="e.g. Latest version for submission"
+                                            placeholder="e.g. Latest version for engagement"
                                         />
                                     </div>
                                     <div className="flex gap-2">

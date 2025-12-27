@@ -85,14 +85,11 @@ export type CloseReason =
 
 export type OfferType = 'W2' | 'C2C';
 
-// V2: Simplified submission status (manual update)
-export type SubmissionStatus = 'ACTIVE' | 'OFFERED' | 'PLACED' | 'REJECTED' | 'WITHDRAWN';
-
 // Step types for the tree-based pipeline
 export type StepType = 'OA' | 'VENDOR_SCREENING' | 'CLIENT_INTERVIEW' | 'OFFER' | 'OFFER_ACCEPTED' | 'OFFER_DECLINED' | 'PLACED' | 'REJECTED' | 'WITHDRAWN';
 export type StepResult = 'PENDING' | 'PASS' | 'FAIL';
 
-// V2.0: Vendor Engagement and Opportunity types
+// Vendor Engagement and Opportunity types
 export type AssessmentType = 'OA' | 'VENDOR_SCREENING';
 export type StepState = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED';
 export type EngagementStatus = 'ACTIVE' | 'INACTIVE';
@@ -186,7 +183,7 @@ export interface Candidate {
     updatedAt: string;
 }
 
-// Position entity (V2)
+// Position entity
 export interface Position {
     id: number;
     title: string;
@@ -200,33 +197,6 @@ export interface Position {
     updatedAt: string;
 }
 
-// Simplified Submission (V2)
-export interface Submission {
-    id: number;
-    candidate: Candidate;
-    vendor: Vendor;
-    vendorContact: string | null;
-    status: SubmissionStatus;
-    notes: string | null;
-    submittedAt: string;
-    updatedAt: string;
-}
-
-// SubmissionStep for tree-based pipeline (V2)
-export interface SubmissionStep {
-    id: number;
-    submission: { id: number };
-    parentStep: { id: number } | null;
-    type: StepType;
-    position: Position | null;
-    round: number | null;
-    scheduledAt: string | null;
-    completedAt: string | null;
-    result: StepResult;
-    feedback: string | null;
-    score: string | null;
-    createdAt: string;
-}
 
 export interface InterviewExperience {
     id: number;
@@ -313,7 +283,7 @@ export interface CandidateDocument {
     notes: string;
 }
 
-// === V2.0 Submission Model ===
+// === Vendor Engagement Model ===
 
 // VendorEngagement: Candidate × Vendor relationship
 export interface VendorEngagement {
@@ -340,7 +310,7 @@ export interface AssessmentAttempt {
     updatedAt: string;
 }
 
-// Opportunity: Submission instance (VendorEngagement × Position)
+// Opportunity: Engagement × Position
 export interface Opportunity {
     id: number;
     vendorEngagement: VendorEngagement;

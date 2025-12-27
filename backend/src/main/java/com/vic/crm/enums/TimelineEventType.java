@@ -24,7 +24,7 @@ public enum TimelineEventType {
     INTERVIEW, // general interview events
     OUTCOME, // offer, placed
     CLOSED, // closed with reason
-    // Vendor/Client submission events
+    // Vendor/Client engagement events
     VENDOR_SUBMIT, // submitted to vendor
     VENDOR_OA, // vendor online assessment
     VENDOR_INTERVIEW, // vendor interview

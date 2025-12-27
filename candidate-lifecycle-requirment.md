@@ -23,11 +23,11 @@ theory mock failed, then can retake theory mock
 ### MARKETING
 if the candiate passed the real mock, 事件驱动，进入marketing stage
 
-如果我通过submission按钮提交该candidate，事件驱动，会把该submission的event写入timeline. 可以认为submission的事件是marketing过程中发生的事情，类似于子stage,
-比如我提交了vendor bayone for OA, 那么会计入timeline bayone OA, if OA pass,会记录OA pass.
-然后我又提交了vendor infobahn, infobahn 没有OA，直接安排了vendor screening， 那么该事件也会计入。 之后又安排了client面试，client面试分为round 1 or round 2 or more.
-比如我又提交了radstand, 直接安排了client面试。比如是Walmart的面试。
-所以这里的事件比较复杂。我希望这里全是由submission那里来驱动更新timeline.
+如果我通过 Vendor Engagement 创建该 candidate 的 engagement/opportunity，事件驱动，会把对应事件写入 timeline。可以认为 engagement/opportunity 的事件是 marketing 过程中发生的事情，类似于子 stage。
+比如我在 vendor Bayone 建立 OA 评估，那么会计入 timeline Bayone OA，if OA pass，会记录 OA pass。
+然后我又在 vendor Infobahn 建立 engagement，Infobahn 没有 OA，直接安排了 vendor screening，那么该事件也会计入。之后又安排了 client 面试，client 面试分为 round 1 或 round 2 or more。
+比如我又在 Radstand 建立 engagement，直接安排了 client 面试。比如是 Walmart 的面试。
+所以这里的事件比较复杂。我希望这里全是由 vendor engagement/opportunity 的流程来驱动更新 timeline。
 timeline也最好按照vendor来分支，即子timeline。
 
 ### INTERVIEWING
@@ -50,4 +50,3 @@ candiate 被开除。
 
 
 一些事件驱动的状态，应该也能支持人工改变，比如一个batch已经开始了，招进来了一个人。加入了该batch， 那么recruiter可以把他调为training stage.
-

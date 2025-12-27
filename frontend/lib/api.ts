@@ -1,10 +1,10 @@
 /**
  * API client for VicCRM backend
  */
-import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, Vendor, Client, Submission, SubmissionStatus, SubmissionStep, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, AssessmentType, StepState, StepType } from '@/types';
+import type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, CloseReason, OfferType, Vendor, Client, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, AssessmentType, StepState, StepType } from '@/types';
 
 // Re-export types for convenience
-export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, Submission, SubmissionStatus, SubmissionStep, StepType, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, AssessmentType, StepState } from '@/types';
+export type { User, Batch, Candidate, TimelineEvent, CandidateStage, CandidateSubStatus, WorkAuth, UserRole, TimelineEventType, CloseReason, OfferType, Vendor, Client, StepType, StepResult, Position, InterviewExperience, VendorContact, Mock, MockCriteria, MockCriteriaRating, CandidateDocument, DocumentType, VendorEngagement, AssessmentAttempt, Opportunity, PipelineStep, OpportunityAttemptLink, CandidateEngagementResponse, AssessmentType, StepState } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -101,7 +101,7 @@ export const clientsApi = {
     delete: (id: number) => fetch(`${API_BASE_URL}/api/clients/${id}`, { method: 'DELETE' }),
 };
 
-// Positions API (V2)
+// Positions API
 export const positionsApi = {
     getAll: (clientId?: number) => fetchApi<Position[]>(`/api/positions${clientId ? `?clientId=${clientId}` : ''}`),
     getOpen: () => fetchApi<Position[]>('/api/positions/open'),
@@ -109,43 +109,6 @@ export const positionsApi = {
     create: (data: Partial<Position>) => fetchApi<Position>('/api/positions', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: number, data: Partial<Position>) => fetchApi<Position>(`/api/positions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) => fetch(`${API_BASE_URL}/api/positions/${id}`, { method: 'DELETE' }),
-};
-
-// Submissions API (V2 - simplified with step-based model)
-export const submissionsApi = {
-    getAll: () => fetchApi<Submission[]>('/api/submissions'),
-    getByCandidate: (candidateId: number) => fetchApi<Submission[]>(`/api/submissions/candidate/${candidateId}`),
-    getByVendor: (vendorId: number) => fetchApi<Submission[]>(`/api/submissions/vendor/${vendorId}`),
-    getById: (id: number) => fetchApi<Submission>(`/api/submissions/${id}`),
-    create: (data: Partial<Submission>) => fetchApi<Submission>('/api/submissions', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: number, data: Partial<Submission>) => fetchApi<Submission>(`/api/submissions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: number) => fetch(`${API_BASE_URL}/api/submissions/${id}`, { method: 'DELETE' }),
-
-    // Manual status update
-    updateStatus: (id: number, payload: { status: SubmissionStatus }) =>
-        fetchApi<Submission>(`/api/submissions/${id}/status`, { method: 'PUT', body: JSON.stringify(payload) }),
-
-    // Steps (tree-based, V2)
-    getSteps: (id: number) => fetchApi<SubmissionStep[]>(`/api/submissions/${id}/steps`),
-    addStep: (id: number, payload: {
-        parentStepId?: number | null;
-        type: string;
-        positionId?: number;
-        round?: number;
-        scheduledAt?: string
-    }) =>
-        fetchApi<SubmissionStep>(`/api/submissions/${id}/steps`, { method: 'POST', body: JSON.stringify(payload) }),
-
-    // Step result update
-    updateStepResult: (stepId: number, payload: { result: StepResult; feedback?: string; score?: string }) =>
-        fetchApi<SubmissionStep>(`/api/submissions/steps/${stepId}/result`, { method: 'PUT', body: JSON.stringify(payload) }),
-
-    // Step schedule update
-    updateStepSchedule: (stepId: number, payload: { scheduledAt: string }) =>
-        fetchApi<SubmissionStep>(`/api/submissions/steps/${stepId}/schedule`, { method: 'PUT', body: JSON.stringify(payload) }),
-
-    // Delete step
-    deleteStep: (stepId: number) => fetch(`${API_BASE_URL}/api/submissions/steps/${stepId}`, { method: 'DELETE' }),
 };
 
 // Interview Experiences API
@@ -206,8 +169,6 @@ export const documentsApi = {
     getDownloadUrl: (id: number) => `${API_BASE_URL}/api/documents/${id}/download`,
 };
 
-// === V2.0 Submission Model APIs ===
-
 // Vendor Engagements API
 export const vendorEngagementsApi = {
     getById: (id: number) => fetchApi<VendorEngagement>(`/api/vendor-engagements/${id}`),
@@ -235,7 +196,7 @@ export const vendorEngagementsApi = {
     }) => fetchApi<Opportunity>(`/api/vendor-engagements/${id}/opportunities`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
-// Opportunities API (V2.0)
+// Opportunities API
 export const opportunitiesApi = {
     getById: (id: number) => fetchApi<Opportunity>(`/api/opportunities/${id}`),
     getSteps: (id: number) => fetchApi<PipelineStep[]>(`/api/opportunities/${id}/steps`),
@@ -258,7 +219,7 @@ export const opportunitiesApi = {
         fetch(`${API_BASE_URL}/api/opportunities/${id}/attempt-links/${attemptId}`, { method: 'DELETE' }),
 };
 
-// Pipeline Steps API (V2.0)
+// Pipeline Steps API
 export const pipelineStepsApi = {
     update: (id: number, data: {
         state?: StepState;
@@ -269,7 +230,7 @@ export const pipelineStepsApi = {
     }) => fetchApi<PipelineStep>(`/api/pipeline-steps/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
-// Assessment Attempts API (V2.0)
+// Assessment Attempts API
 export const assessmentAttemptsApi = {
     update: (id: number, data: {
         state?: StepState;

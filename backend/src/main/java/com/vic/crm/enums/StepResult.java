@@ -1,7 +1,7 @@
 package com.vic.crm.enums;
 
 /**
- * Result of a submission step.
+ * Result of a pipeline step.
  */
 public enum StepResult {
     PENDING,

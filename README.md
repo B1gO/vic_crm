@@ -88,12 +88,21 @@ This creates: 4 users, 2 batches, 5 clients, 3 vendors, 4 candidates.
 - [x] `PUT /api/clients/{id}` - Update client
 - [x] `DELETE /api/clients/{id}` - Delete client
 
-### Submissions
-- [x] `GET /api/submissions` - List all submissions
-- [x] `GET /api/submissions/candidate/{id}` - Get submissions by candidate
-- [x] `GET /api/submissions/vendor/{id}` - Get submissions by vendor
-- [x] `POST /api/submissions` - Create submission
-- [x] `PUT /api/submissions/{id}` - Update submission
+### Vendor Engagements
+- [x] `GET /api/candidates/{id}/engagements` - Get engagements by candidate
+- [x] `GET /api/vendor-engagements/{id}` - Get vendor engagement by ID
+- [x] `POST /api/vendor-engagements` - Create vendor engagement
+- [x] `GET /api/vendor-engagements/{id}/attempts` - List vendor assessment attempts
+- [x] `POST /api/vendor-engagements/{id}/attempts` - Create assessment attempt
+- [x] `POST /api/vendor-engagements/{id}/opportunities` - Create opportunity
+- [x] `GET /api/opportunities/{id}` - Get opportunity by ID
+- [x] `GET /api/opportunities/{id}/steps` - List opportunity pipeline steps
+- [x] `POST /api/opportunities/{id}/steps` - Create pipeline step
+- [x] `GET /api/opportunities/{id}/attempt-links` - List attached attempts
+- [x] `POST /api/opportunities/{id}/attempt-links` - Attach assessment attempt
+- [x] `DELETE /api/opportunities/{id}/attempt-links/{attemptId}` - Detach assessment attempt
+- [x] `PATCH /api/assessment-attempts/{id}` - Update assessment attempt
+- [x] `PATCH /api/pipeline-steps/{id}` - Update pipeline step
 
 ### Interview Experiences
 - [x] `GET /api/interview-experiences` - List all experiences
@@ -190,7 +199,7 @@ DIRECT_MARKETING → (skip training, go directly to marketing)
 - **Add Candidate Form**: Create candidates with recruiter and batch assignment
 - **Career Timeline**: Track all events from recruitment to placement
 - **Stage Transitions**: Move candidates through RECRUITMENT → TRAINING → MARKET_READY → PLACED
-- **Submissions Tab**: Submit candidates to vendors with client and contact selection
+- **Vendor Engagements Tab**: Create engagements, attempts, and opportunities per vendor
 - **Documents Tab**: Upload, download, delete candidate documents (Resume, Contract, DL, OPT_EAD, GC, Passport)
 
 ### Batch Management
@@ -202,49 +211,15 @@ DIRECT_MARKETING → (skip training, go directly to marketing)
 - **Vendor List**: Track vendors with company name, contact, email, phone
 - **Vendor Contacts**: Add multiple contacts per vendor with name, email, phone, LinkedIn, notes
 - **Vendor-Client Links**: Associate vendors with the clients they work with
-- **Vendor Detail Page**: View vendor performance metrics and submission history
-- **Performance by Contact**: Track individual contact success rates (placed, offered, rejected)
+- **Vendor Detail Page**: View vendor profile, contacts, and associated clients
 
 ### Client Management
 - **Client List**: Track end clients with company name and industry
-- **Submission Flow**: Track candidate submissions to client positions
+- **Opportunity Flow**: Track candidate opportunities tied to client positions
 
-### Submissions
+### Vendor Engagements
 
-#### Submission Flow
-
-```mermaid
-flowchart TD
-    A[Submit to Vendor] --> B{Vendor Screening}
-    B -->|OA| C[Online Assessment]
-    B -->|Interview| D[Vendor Interview]
-    B -->|Direct| E[Skip Screening]
-    C --> F{Pass?}
-    D --> F
-    E --> G
-    F -->|Yes| G[Submit to Position]
-    F -->|No| H[Rejected]
-    
-    G --> I["Position: Java Developer"]
-    G --> J["Position: React Developer"]
-    
-    I --> K["Round 1, 2, 3... (flexible)"]
-    J --> L["Round 1, 2... (flexible)"]
-    
-    K --> M{Outcome}
-    L --> M
-    M -->|Offer| N[Placed]
-    M -->|Rejected| O[Continue Marketing]
-```
-
-- **Candidate Submissions**: Submit candidates to vendors with position, client, and contact
-- **Status Tracking**: VENDOR_SCREENING → CLIENT_ROUND → OFFERED/PLACED/REJECTED
-- **Round Tracking**: Track interview round progression
-- **Contact Attribution**: Track which vendor contact handled each submission
-
-### Vendor Engagements (v2.0)
-
-The new Vendor Engagement system provides a more intuitive way to manage candidate submissions and interview pipelines.
+The Vendor Engagement system provides a structured way to manage candidate engagements and interview pipelines.
 
 #### Inline Expandable Opportunity Rows
 - **Inline Display**: Opportunity details expand directly in the page (no modal dialogs)
@@ -258,7 +233,7 @@ Opportunities automatically expand or collapse based on their status:
 |--------|---------|--------|
 | `INTERVIEWING` | ✅ Expanded | Actively in process |
 | `OFFERED` | ✅ Expanded | Pending decision |
-| `ACTIVE` | ❌ Collapsed | Just submitted |
+| `ACTIVE` | ❌ Collapsed | Newly created |
 | `PLACED` | ❌ Collapsed | Terminal state |
 
 #### Terminal States (Auto-Collapse)
@@ -307,14 +282,18 @@ After loading, opportunities with terminal states auto-collapse:
 | linkedinUrl | String | LinkedIn profile URL |
 | notes | String | Notes about contact |
 
-### Submission
+### VendorEngagement
 | Field | Type | Description |
 |-------|------|-------------|
-| candidate | Candidate | The candidate being submitted |
-| vendor | Vendor | The vendor receiving submission |
-| client | Client | Target client (optional) |
-| vendorContact | String | Name of vendor contact |
-| positionTitle | String | Job position title |
-| status | Enum | VENDOR_SCREENING, CLIENT_ROUND, OFFERED, PLACED, REJECTED |
-| screeningType | Enum | OA, INTERVIEW, DIRECT |
-| currentRound | Integer | Interview round number |
+| candidate | Candidate | The candidate in this engagement |
+| vendor | Vendor | The vendor being engaged |
+| status | Enum | ACTIVE, INACTIVE |
+| notes | String | Notes about the engagement |
+
+### Opportunity
+| Field | Type | Description |
+|-------|------|-------------|
+| vendorEngagement | VendorEngagement | Related engagement |
+| position | Position | Client position |
+| status | Enum | ACTIVE, INTERVIEWING, OFFERED, PLACED |
+| submittedAt | DateTime | Submitted timestamp |

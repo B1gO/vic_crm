@@ -1,7 +1,7 @@
 package com.vic.crm.enums;
 
 /**
- * Types of steps in the submission pipeline.
+ * Types of steps in the engagement pipeline.
  */
 public enum StepType {
     OA,
